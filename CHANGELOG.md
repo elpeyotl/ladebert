@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.6.0 (2026-03-29)
+
+### Neu
+- Windows-Support: App kann jetzt auch für Windows gebaut werden
+- GitHub Actions CI: Automatischer Build für macOS und Windows bei Tag-Push
+
+### Intern
+- Plattform-abstrahierter Code (kill, disk space, eject, format)
+- Windows-kompatible Pfade und Umgebungsvariablen
+
 ## v1.5.1 (2026-03-29)
 
 ### Verbesserungen

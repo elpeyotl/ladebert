@@ -92,15 +92,22 @@ fn sidecar_dir() -> std::path::PathBuf {
 }
 
 fn extended_path() -> String {
-    let home = std::env::var("HOME").unwrap_or_default();
     let current = std::env::var("PATH").unwrap_or_default();
     let sidecar = sidecar_dir().to_string_lossy().to_string();
-    format!(
-        "{sidecar}:{home}/.local/bin:/opt/homebrew/bin:/usr/local/bin:{current}",
-        sidecar = sidecar,
-        home = home,
-        current = current
-    )
+    #[cfg(target_os = "windows")]
+    let sep = ";";
+    #[cfg(not(target_os = "windows"))]
+    let sep = ":";
+
+    #[cfg(target_os = "windows")]
+    {
+        format!("{sidecar}{sep}{current}")
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let home = std::env::var("HOME").unwrap_or_default();
+        format!("{sidecar}{sep}{home}/.local/bin:/opt/homebrew/bin:/usr/local/bin:{current}")
+    }
 }
 
 fn xml_escape(s: &str) -> String {
@@ -113,7 +120,10 @@ fn xml_escape(s: &str) -> String {
 
 fn expand_tilde(path: &str) -> String {
     if path.starts_with('~') {
-        if let Some(home) = std::env::var_os("HOME") {
+        // HOME on Unix/macOS, USERPROFILE on Windows
+        let home = std::env::var_os("HOME")
+            .or_else(|| std::env::var_os("USERPROFILE"));
+        if let Some(home) = home {
             return path.replacen('~', &home.to_string_lossy(), 1);
         }
     }
@@ -400,13 +410,25 @@ pub async fn download_audio(
     }
 }
 
+fn kill_process(pid: u32) {
+    if pid == 0 { return; }
+    #[cfg(unix)]
+    unsafe { libc::kill(pid as i32, libc::SIGTERM); }
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("taskkill")
+            .args(["/PID", &pid.to_string(), "/F"])
+            .spawn();
+    }
+}
+
 /// Cancel an active download by killing the yt-dlp process
 #[tauri::command]
 pub async fn cancel_download(event_id: String) -> Result<(), String> {
     let mut downloads = active_downloads().lock().await;
     if let Some(pid) = downloads.remove(&event_id) {
         if pid > 0 {
-            unsafe { libc::kill(pid as i32, libc::SIGTERM); }
+            kill_process(pid);
         }
         Ok(())
     } else {
@@ -420,7 +442,7 @@ pub async fn cancel_all_downloads() -> Result<(), String> {
     let mut downloads = active_downloads().lock().await;
     for (_, pid) in downloads.drain() {
         if pid > 0 {
-            unsafe { libc::kill(pid as i32, libc::SIGTERM); }
+            kill_process(pid);
         }
     }
     Ok(())
@@ -1075,104 +1097,166 @@ pub async fn clear_all_slots(hoerbert_dir: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn get_disk_space(path: String) -> Result<serde_json::Value, String> {
     let expanded = expand_tilde(&path);
-    let stat = unsafe {
-        let c_path = std::ffi::CString::new(expanded.as_bytes()).map_err(|e| e.to_string())?;
-        let mut buf: libc::statvfs = std::mem::zeroed();
-        if libc::statvfs(c_path.as_ptr(), &mut buf) != 0 {
+
+    // Check path exists
+    if !std::path::Path::new(&expanded).exists() {
+        return Err("Pfad nicht gefunden".to_string());
+    }
+
+    #[cfg(unix)]
+    {
+        let stat = unsafe {
+            let c_path = std::ffi::CString::new(expanded.as_bytes()).map_err(|e| e.to_string())?;
+            let mut buf: libc::statvfs = std::mem::zeroed();
+            if libc::statvfs(c_path.as_ptr(), &mut buf) != 0 {
+                return Err("Speicherplatz konnte nicht gelesen werden".to_string());
+            }
+            buf
+        };
+        let block_size = stat.f_frsize as u64;
+        let total = stat.f_blocks as u64 * block_size;
+        let free = stat.f_bavail as u64 * block_size;
+        let used = total - (stat.f_bfree as u64 * block_size);
+        Ok(serde_json::json!({ "total": total, "used": used, "free": free }))
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::ffi::OsStrExt;
+        let wide: Vec<u16> = std::ffi::OsStr::new(&expanded).encode_wide().chain(Some(0)).collect();
+        let mut free_bytes: u64 = 0;
+        let mut total_bytes: u64 = 0;
+        let mut total_free: u64 = 0;
+        let ok = unsafe {
+            windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(
+                wide.as_ptr(),
+                &mut free_bytes,
+                &mut total_bytes,
+                &mut total_free,
+            )
+        };
+        if ok == 0 {
             return Err("Speicherplatz konnte nicht gelesen werden".to_string());
         }
-        buf
-    };
-
-    let block_size = stat.f_frsize as u64;
-    let total = stat.f_blocks as u64 * block_size;
-    let free = stat.f_bavail as u64 * block_size;
-    let used = total - (stat.f_bfree as u64 * block_size);
-
-    Ok(serde_json::json!({
-        "total": total,
-        "used": used,
-        "free": free,
-    }))
+        let used = total_bytes - total_free;
+        Ok(serde_json::json!({ "total": total_bytes, "used": used, "free": free_bytes }))
+    }
 }
 
-/// Eject a mounted disk (macOS: diskutil eject)
+/// Eject a mounted disk
 #[tauri::command]
 pub async fn eject_disk(path: String) -> Result<(), String> {
-    let output = Command::new("diskutil")
-        .args(["eject", &path])
-        .output()
-        .await
-        .map_err(|e| format!("diskutil Fehler: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Auswerfen fehlgeschlagen: {}", stderr.trim()));
+    #[cfg(target_os = "macos")]
+    {
+        let output = Command::new("diskutil")
+            .args(["eject", &path])
+            .output()
+            .await
+            .map_err(|e| format!("diskutil Fehler: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Auswerfen fehlgeschlagen: {}", stderr.trim()));
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, use PowerShell to eject removable drive
+        let drive_letter = path.chars().next().unwrap_or('D');
+        let script = format!(
+            "$vol = Get-Volume -DriveLetter '{}'; $disk = $vol | Get-Partition | Get-Disk; $disk | Set-Disk -IsOffline $true",
+            drive_letter
+        );
+        let output = Command::new("powershell")
+            .args(["-NoProfile", "-Command", &script])
+            .output()
+            .await
+            .map_err(|e| format!("Auswerfen fehlgeschlagen: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Auswerfen fehlgeschlagen: {}", stderr.trim()));
+        }
     }
     Ok(())
 }
 
-/// Format SD card as FAT32 (macOS: diskutil)
+/// Format SD card as FAT32
 #[tauri::command]
 pub async fn format_sd_card(path: String) -> Result<String, String> {
     let expanded = expand_tilde(&path);
 
-    // Find the disk identifier for the given mount path
-    let info = Command::new("diskutil")
-        .args(["info", "-plist", &expanded])
-        .output()
-        .await
-        .map_err(|e| format!("diskutil Fehler: {}", e))?;
+    #[cfg(target_os = "macos")]
+    let new_mount = {
+        // Find the disk identifier for the given mount path
+        let info = Command::new("diskutil")
+            .args(["info", "-plist", &expanded])
+            .output()
+            .await
+            .map_err(|e| format!("diskutil Fehler: {}", e))?;
 
-    if !info.status.success() {
-        return Err("Konnte Disk-Info nicht lesen. Ist die SD-Karte eingelegt?".to_string());
-    }
+        if !info.status.success() {
+            return Err("Konnte Disk-Info nicht lesen. Ist die SD-Karte eingelegt?".to_string());
+        }
 
-    let stdout = String::from_utf8_lossy(&info.stdout);
+        let stdout = String::from_utf8_lossy(&info.stdout);
 
-    // Extract DeviceIdentifier from plist (e.g. "disk4s1")
-    let device_id = stdout
-        .find("<key>DeviceIdentifier</key>")
-        .and_then(|pos| {
-            let rest = &stdout[pos..];
-            let start = rest.find("<string>")? + 8;
-            let end = rest.find("</string>")?;
-            Some(rest[start..end].to_string())
-        })
-        .ok_or("Konnte Device-ID nicht ermitteln")?;
+        let device_id = stdout
+            .find("<key>DeviceIdentifier</key>")
+            .and_then(|pos| {
+                let rest = &stdout[pos..];
+                let start = rest.find("<string>")? + 8;
+                let end = rest.find("</string>")?;
+                Some(rest[start..end].to_string())
+            })
+            .ok_or("Konnte Device-ID nicht ermitteln")?;
 
-    // Get the whole disk (e.g. "disk4" from "disk4s1")
-    // Find the last 's' followed by digits = partition separator
-    let whole_disk = if let Some(pos) = device_id.rfind('s') {
-        if device_id[pos+1..].chars().all(|c| c.is_ascii_digit()) {
-            device_id[..pos].to_string()
+        // Get the whole disk (e.g. "disk4" from "disk4s1")
+        let whole_disk = if let Some(pos) = device_id.rfind('s') {
+            if device_id[pos+1..].chars().all(|c| c.is_ascii_digit()) {
+                device_id[..pos].to_string()
+            } else {
+                device_id.clone()
+            }
         } else {
             device_id.clone()
+        };
+
+        // Format as FAT32 with MBR partition scheme (required for hörbert)
+        let output = Command::new("diskutil")
+            .args(["eraseDisk", "FAT32", "HOERBERT", "MBRFormat", &format!("/dev/{}", whole_disk)])
+            .output()
+            .await
+            .map_err(|e| format!("Formatierung fehlgeschlagen: {}", e))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Formatierung fehlgeschlagen: {}", stderr.trim()));
         }
-    } else {
-        device_id.clone()
+
+        // Wait for the new volume to be mounted
+        let mount = "/Volumes/HOERBERT".to_string();
+        for _ in 0..20 {
+            if std::path::Path::new(&mount).exists() { break; }
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        }
+        mount
     };
 
-    // Format as FAT32 with MBR partition scheme (required for hörbert)
-    let output = Command::new("diskutil")
-        .args(["eraseDisk", "FAT32", "HOERBERT", "MBRFormat", &format!("/dev/{}", whole_disk)])
-        .output()
-        .await
-        .map_err(|e| format!("Formatierung fehlgeschlagen: {}", e))?;
+    #[cfg(target_os = "windows")]
+    let new_mount = {
+        let drive_letter = expanded.chars().next().unwrap_or('D');
+        // Format with Windows format command (FAT32, quick, label HOERBERT)
+        let output = Command::new("cmd")
+            .args(["/C", &format!("format {}: /FS:FAT32 /Q /V:HOERBERT /Y", drive_letter)])
+            .output()
+            .await
+            .map_err(|e| format!("Formatierung fehlgeschlagen: {}", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Formatierung fehlgeschlagen: {}", stderr.trim()));
-    }
-
-    // Wait for the new volume to be mounted (up to 10 seconds)
-    let new_mount = "/Volumes/HOERBERT".to_string();
-    for _ in 0..20 {
-        if std::path::Path::new(&new_mount).exists() {
-            break;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Formatierung fehlgeschlagen: {}", stderr.trim()));
         }
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-    }
+        format!("{}:\\", drive_letter)
+    };
 
     // Create hörbert folder structure
     if std::path::Path::new(&new_mount).exists() {
