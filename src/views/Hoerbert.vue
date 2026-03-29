@@ -388,6 +388,7 @@ async function clearAllSlots() {
     await invoke('clear_all_slots', { hoerbertDir: hoerbertDir.value })
     for (let i = 1; i <= 9; i++) slotFiles.value[i] = []
     saveSlots()
+    await loadDiskSpace()
   } catch (e) {
     alert('Fehler beim Löschen: ' + e)
   }
@@ -530,6 +531,7 @@ async function removeFromSlot(slot: number, track: SlotTrack, index: number) {
         trackIndex: existingIndex,
       })
       await loadSlotsFromCard()
+      await loadDiskSpace()
     } catch (e) {
       alert('Fehler beim Löschen: ' + e)
     }
@@ -549,6 +551,7 @@ async function clearSlot(slot: number) {
     }
     slotFiles.value[slot] = []
     saveSlots()
+    await loadDiskSpace()
   } catch (e) {
     alert('Fehler beim Leeren: ' + e)
   }
@@ -597,6 +600,7 @@ async function writeToCard() {
 
   try {
     for (const [slot, tracks] of Object.entries(slotFiles.value)) {
+      if (downloadState.cancelled) break
       const newTracks = tracks.filter(t => t.isNew)
       if (!newTracks.length) continue
       await invoke('write_to_hoerbert', {
@@ -607,22 +611,33 @@ async function writeToCard() {
       })
     }
 
-    writeSuccess.value = true
-    downloadState.currentIndex = totalNew
-    downloadState.currentTrack = 'Fertig!'
-    downloadState.eta = ''
+    if (!downloadState.cancelled) {
+      writeSuccess.value = true
+      downloadState.currentIndex = totalNew
+      downloadState.currentTrack = 'Fertig!'
+      downloadState.eta = ''
 
-    for (let i = 1; i <= 9; i++) {
-      slotFiles.value[i] = slotFiles.value[i].filter(t => !t.isNew)
+      for (let i = 1; i <= 9; i++) {
+        slotFiles.value[i] = slotFiles.value[i].filter(t => !t.isNew)
+      }
+      await loadSlotsFromCard()
+      await loadDiskSpace()
+      setTimeout(() => writeSuccess.value = false, 4000)
+    } else {
+      downloadState.currentTrack = 'Abgebrochen'
+      downloadState.eta = ''
     }
-    await loadSlotsFromCard()
-    await loadDiskSpace()
-    setTimeout(() => writeSuccess.value = false, 4000)
-  } catch (e) {
-    alert('Fehler beim Schreiben: ' + e)
+  } catch (e: any) {
+    if (e !== 'Abgebrochen' && !downloadState.cancelled) {
+      alert('Fehler beim Schreiben: ' + e)
+    } else {
+      downloadState.currentTrack = 'Abgebrochen'
+      downloadState.eta = ''
+    }
   } finally {
     unlisten()
     writing.value = false
+    downloadState.cancelled = false
     setTimeout(() => { downloadState.active = false }, 3000)
   }
 }

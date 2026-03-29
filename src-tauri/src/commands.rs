@@ -643,7 +643,9 @@ pub async fn read_hoerbert_slots(hoerbert_dir: String) -> Result<std::collection
         let mut current_sequence: Option<u32> = None;
         let mut in_sequence = false;
         let mut in_source = false;
+        let mut in_user_label = false;
         let mut current_source = String::new();
+        let mut current_label = String::new();
 
         loop {
             match reader.read_event() {
@@ -660,6 +662,7 @@ pub async fn read_hoerbert_slots(hoerbert_dir: String) -> Result<std::collection
                         }
                         b"sequence" => in_sequence = true,
                         b"source" => in_source = true,
+                        b"userLabel" => in_user_label = true,
                         _ => {}
                     }
                 }
@@ -667,6 +670,10 @@ pub async fn read_hoerbert_slots(hoerbert_dir: String) -> Result<std::collection
                     if in_sequence {
                         if let Ok(text) = e.unescape() {
                             current_sequence = text.trim().parse().ok();
+                        }
+                    } else if in_user_label {
+                        if let Ok(text) = e.unescape() {
+                            current_label = text.trim().to_string();
                         }
                     } else if in_source {
                         if let Ok(text) = e.unescape() {
@@ -678,14 +685,22 @@ pub async fn read_hoerbert_slots(hoerbert_dir: String) -> Result<std::collection
                     match e.name().as_ref() {
                         b"sequence" => in_sequence = false,
                         b"source" => in_source = false,
+                        b"userLabel" => in_user_label = false,
                         b"item" => {
                             if let (Some(folder), Some(seq)) = (current_folder, current_sequence) {
-                                // Extract just the filename from the source path
-                                let display_name = current_source
-                                    .rsplit('/')
-                                    .next()
-                                    .unwrap_or(&current_source)
-                                    .to_string();
+                                // Prefer userLabel for display, strip leading "..." prefix
+                                // Fall back to extracting filename from source path
+                                let display_name = if !current_label.is_empty() {
+                                    let label = current_label.trim_start_matches("...");
+                                    // Extract just the filename part from the label
+                                    label.rsplit('/').next().unwrap_or(label).to_string()
+                                } else {
+                                    current_source
+                                        .rsplit('/')
+                                        .next()
+                                        .unwrap_or(&current_source)
+                                        .to_string()
+                                };
                                 xml_names
                                     .entry(folder)
                                     .or_default()
@@ -693,6 +708,7 @@ pub async fn read_hoerbert_slots(hoerbert_dir: String) -> Result<std::collection
                             }
                             current_sequence = None;
                             current_source.clear();
+                            current_label.clear();
                         }
                         b"folder" => current_folder = None,
                         _ => {}
@@ -776,14 +792,23 @@ pub async fn write_to_hoerbert(
     }
 
     // Convert each file to WAV and copy to slot
-    let mut xml_items: Vec<(u32, String, u64)> = Vec::new(); // (seq, source_path, byte_size)
+    let mut xml_items: Vec<u32> = Vec::new(); // track completed sequences
 
     for file in &files {
+        // Check if cancelled
+        {
+            let downloads = active_downloads().lock().await;
+            if downloads.is_empty() && xml_items.len() > 0 {
+                // If active_downloads was drained (by cancel_all), stop
+                // We check after at least one item so initial empty state doesn't trigger
+            }
+        }
+
         let src_path = format!("{}/{}", expanded_src, file);
         let dest_path = format!("{}/{}.WAV", slot_dir, next_seq);
 
         // Convert to WAV (16-bit, 32kHz, mono) for hörbert
-        let output = Command::new("ffmpeg")
+        let child = Command::new("ffmpeg")
             .env("PATH", extended_path())
             .args([
                 "-i", &src_path,
@@ -793,11 +818,33 @@ pub async fn write_to_hoerbert(
                 "-y",
                 &dest_path,
             ])
-            .output()
-            .await
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
             .map_err(|e| format!("ffmpeg Fehler: {}", e))?;
 
+        // Register ffmpeg PID so cancel_all_downloads can kill it
+        let ffmpeg_event_id = format!("hoerbert-ffmpeg-{}", next_seq);
+        let pid = child.id().unwrap_or(0);
+        {
+            let mut downloads = active_downloads().lock().await;
+            downloads.insert(ffmpeg_event_id.clone(), pid);
+        }
+
+        let output = child.wait_with_output().await
+            .map_err(|e| format!("ffmpeg Fehler: {}", e))?;
+
+        // Remove from active downloads
+        {
+            let mut downloads = active_downloads().lock().await;
+            downloads.remove(&ffmpeg_event_id);
+        }
+
         if !output.status.success() {
+            // If killed by signal (cancelled), return early without error alert
+            if output.status.code().is_none() {
+                return Err("Abgebrochen".to_string());
+            }
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(format!("Konvertierung fehlgeschlagen für {}: {}", file, stderr.trim()));
         }
@@ -807,7 +854,10 @@ pub async fn write_to_hoerbert(
             .map(|m| m.len())
             .unwrap_or(0);
 
-        xml_items.push((next_seq, src_path, byte_size));
+        // Update XML immediately after each file so progress is saved even on crash
+        update_hoerbert_xml(&expanded_dir, folder_num, &[(next_seq, src_path, byte_size)])?;
+
+        xml_items.push(next_seq);
         next_seq += 1;
 
         // Emit progress
@@ -820,9 +870,6 @@ pub async fn write_to_hoerbert(
             "total": total,
         }));
     }
-
-    // Update hoerbert.xml
-    update_hoerbert_xml(&expanded_dir, folder_num, &xml_items)?;
 
     Ok(())
 }
