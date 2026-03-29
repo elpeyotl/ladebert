@@ -513,13 +513,23 @@ const updateAvailable = ref(false)
 const updateVersion = ref('')
 const updateUrl = ref('')
 
+function isNewerVersion(latest: string, current: string): boolean {
+  const l = latest.split('.').map(Number)
+  const c = current.split('.').map(Number)
+  for (let i = 0; i < 3; i++) {
+    if ((l[i] || 0) > (c[i] || 0)) return true
+    if ((l[i] || 0) < (c[i] || 0)) return false
+  }
+  return false
+}
+
 async function checkForUpdate() {
   try {
     const res = await fetch('https://api.github.com/repos/elpeyotl/ladebert/releases/latest')
     if (!res.ok) return
     const data = await res.json()
     const latest = (data.tag_name || '').replace(/^v/, '')
-    if (latest && latest !== appVersion) {
+    if (latest && isNewerVersion(latest, appVersion)) {
       updateAvailable.value = true
       updateVersion.value = latest
       updateUrl.value = data.html_url
