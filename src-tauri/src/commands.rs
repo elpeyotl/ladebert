@@ -103,6 +103,14 @@ fn extended_path() -> String {
     )
 }
 
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+     .replace('<', "&lt;")
+     .replace('>', "&gt;")
+     .replace('"', "&quot;")
+     .replace('\'', "&apos;")
+}
+
 fn expand_tilde(path: &str) -> String {
     if path.starts_with('~') {
         if let Some(home) = std::env::var_os("HOME") {
@@ -167,6 +175,59 @@ pub async fn search_youtube(query: String, limit: Option<u32>) -> Result<Vec<Sea
                     .unwrap_or_default(),
                 url: format!("https://www.youtube.com/watch?v={}", id),
             });
+        }
+    }
+
+    Ok(results)
+}
+
+/// Search YouTube for playlists using yt-dlp
+#[tauri::command]
+pub async fn search_youtube_playlists(query: String, limit: Option<u32>) -> Result<Vec<serde_json::Value>, String> {
+    let count = limit.unwrap_or(10);
+    // Use yt-dlp to search for playlists via YouTube search URL with filter
+    let search_url = format!(
+        "https://www.youtube.com/results?search_query={}&sp=EgIQAw%253D%253D",
+        urlencoding::encode(&query)
+    );
+    let output = Command::new("yt-dlp")
+        .env("PATH", extended_path())
+        .args([
+            &search_url,
+            "--dump-json",
+            "--flat-playlist",
+            "--quiet",
+            "--playlist-end", &count.to_string(),
+        ])
+        .output()
+        .await
+        .map_err(|e| format!("yt-dlp Fehler: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut results = Vec::new();
+
+    for line in stdout.lines() {
+        if line.trim().is_empty() { continue; }
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(line) {
+            // Only include playlist entries (they have a playlist URL or _type = playlist)
+            let url = json["url"].as_str().unwrap_or("");
+            let id = json["id"].as_str().unwrap_or("");
+            if url.contains("playlist?list=") || id.starts_with("PL") {
+                results.push(serde_json::json!({
+                    "id": id,
+                    "title": json["title"].as_str().unwrap_or("Unbekannt"),
+                    "channel": json["uploader"].as_str()
+                        .or_else(|| json["channel"].as_str())
+                        .unwrap_or(""),
+                    "count": json["playlist_count"].as_u64().unwrap_or(0),
+                    "url": if url.starts_with("http") { url.to_string() }
+                           else { format!("https://www.youtube.com/playlist?list={}", id) },
+                    "thumbnail": json["thumbnails"].as_array()
+                        .and_then(|arr| arr.first())
+                        .and_then(|t| t["url"].as_str())
+                        .unwrap_or(""),
+                }));
+            }
         }
     }
 
@@ -892,14 +953,19 @@ fn update_hoerbert_xml(
     for (seq, source, size) in new_items {
         let guid = format!("{:08X}-{:04X}-{:04X}-{:04X}-{:012X}",
             rand_u32(), rand_u16(), rand_u16(), rand_u16(), rand_u64() & 0xFFFFFFFFFFFF);
-        let label = if source.len() > 60 {
-            format!("...{}", &source[source.len()-57..])
+        // Truncate label safely at char boundary
+        let label = if source.chars().count() > 60 {
+            let truncated: String = source.chars().skip(source.chars().count() - 57).collect();
+            format!("...{}", truncated)
         } else {
             source.clone()
         };
+        // XML-escape special characters
+        let esc_source = xml_escape(source);
+        let esc_label = xml_escape(&label);
         items_xml.push_str(&format!(
             "\t\t\t\t\t<item guid=\"{}\">\n\t\t\t\t\t\t<sequence>{}</sequence>\n\t\t\t\t\t\t<source>{}</source>\n\t\t\t\t\t\t<userLabel>{}</userLabel>\n\t\t\t\t\t\t<byteSize>{}</byteSize>\n\t\t\t\t\t</item>\n",
-            guid, seq, source, label, size
+            guid, seq, esc_source, esc_label, size
         ));
     }
 

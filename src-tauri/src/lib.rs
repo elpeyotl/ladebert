@@ -9,6 +9,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             search_youtube,
+            search_youtube_playlists,
             get_playlist_info,
             download_audio,
             download_spotify_playlist,

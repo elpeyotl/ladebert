@@ -47,6 +47,9 @@
     <!-- Filters (only in search mode) -->
     <div v-if="mode === 'search'" class="filters-bar">
       <div class="filter-row">
+        <button class="chip" :class="{ active: searchType === 'videos' }" @click="searchType = 'videos'">Videos</button>
+        <button class="chip" :class="{ active: searchType === 'playlists' }" @click="searchType = 'playlists'">Playlisten</button>
+        <span class="filter-divider" />
         <button
           v-for="cat in categories"
           :key="cat.id"
@@ -55,7 +58,7 @@
           @click="toggleCategory(cat.id)"
         >{{ cat.label }}</button>
       </div>
-      <div class="filter-row">
+      <div v-if="searchType === 'videos'" class="filter-row">
         <button
           v-for="dur in durations"
           :key="dur.id"
@@ -79,7 +82,40 @@
       <!-- Left: Results -->
       <div class="results-panel">
         <!-- Search results -->
-        <template v-if="mode === 'search'">
+        <template v-if="mode === 'search' && searchType === 'playlists'">
+          <div v-if="loading" class="empty-state">
+            <div class="search-spinner" />
+            <p>Suche nach Playlisten...</p>
+          </div>
+          <div v-else-if="!playlistResults.length" class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 6h16M4 10h16M4 14h8"/>
+            </svg>
+            <p>Suche nach Alben, Playlisten oder Sammlungen</p>
+          </div>
+          <div v-else>
+            <div class="results-header">
+              <span class="results-count">{{ playlistResults.length }} Playlisten</span>
+            </div>
+            <div class="results-grid">
+              <div v-for="pl in playlistResults" :key="pl.id" class="track-card playlist-card" @click="loadPlaylistFromSearch(pl)">
+                <div class="track-info" style="flex:1">
+                  <div class="track-title">{{ pl.title }}</div>
+                  <div class="track-meta">
+                    <span v-if="pl.channel">{{ pl.channel }}</span>
+                    <span v-if="pl.channel && pl.count" class="dot">·</span>
+                    <span v-if="pl.count">{{ pl.count }} Tracks</span>
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:0.4">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="mode === 'search'">
           <div v-if="loading && !results.length" class="empty-state">
             <div class="search-spinner" />
             <p>Suche läuft...</p>
@@ -240,7 +276,9 @@ const addToQueue = inject('addToQueue') as (items: any) => void
 const playTrack = inject('playTrack') as (title: string, artist: string, query: string) => void
 
 type Mode = 'search' | 'url'
+type SearchType = 'videos' | 'playlists'
 const mode = ref<Mode>('search')
+const searchType = ref<SearchType>('videos')
 const modes = [
   { id: 'search', label: 'Suche' },
   { id: 'url', label: 'URL / Playlist' },
@@ -249,6 +287,9 @@ const modes = [
 const query = ref('')
 const loading = ref(false)
 const error = ref('')
+
+// Playlist search results
+const playlistResults = ref<any[]>([])
 
 // ─── Categories ────────────────────────────────────────
 const categories = [
@@ -347,6 +388,19 @@ async function doSearch() {
   if (!canSearch()) return
   loading.value = true
   error.value = ''
+
+  if (searchType.value === 'playlists') {
+    playlistResults.value = []
+    try {
+      playlistResults.value = await invoke<any[]>('search_youtube_playlists', { query: buildSearchQuery(), limit: 10 })
+    } catch (e: any) {
+      error.value = e
+    } finally {
+      loading.value = false
+    }
+    return
+  }
+
   results.value = []
   searchResultCount.value = 10
   try {
@@ -390,6 +444,12 @@ function downloadAllResults() {
   }))
 
   addToQueue(items)
+}
+
+function loadPlaylistFromSearch(pl: any) {
+  query.value = pl.url
+  mode.value = 'url'
+  loadUrl()
 }
 
 async function loadUrl() {
@@ -704,6 +764,20 @@ function downloadAll() {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.playlist-card {
+  cursor: pointer;
+}
+.playlist-card:hover {
+  background: var(--bg-hover);
 }
 
 .track-card {

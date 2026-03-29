@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.0 (2026-03-29)
+
+### Neu
+- YouTube Playlist-Suche: Suche nach Alben und Playlisten direkt in der Suchansicht
+
+### Bugfixes
+- Crash beim Schreiben auf SD-Karte behoben (UTF-8 Umlaute in Dateinamen)
+- XML-Sonderzeichen (& < >) werden jetzt korrekt escaped
+- Lösch-Dialoge blockieren jetzt zuverlässig (native Tauri-Dialoge statt Browser-confirm)
+
 ## v1.1.1 (2026-03-29)
 
 ### Bugfix

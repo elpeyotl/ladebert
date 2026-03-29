@@ -247,6 +247,7 @@
 import { ref, computed, onMounted, inject } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { ask } from '@tauri-apps/plugin-dialog'
 
 const settings = inject('settings') as any
 const downloadState = inject('downloadState') as any
@@ -382,7 +383,8 @@ function collapseAllSlots() {
 }
 
 async function clearAllSlots() {
-  if (!confirm(`Alle ${totalFiles.value} Tracks von der SD-Karte löschen? Die Ordnerstruktur bleibt erhalten.`)) return
+  const yes = await ask(`Alle ${totalFiles.value} Tracks von der SD-Karte löschen?`, { title: 'Alles löschen', kind: 'warning' })
+  if (!yes) return
 
   try {
     await invoke('clear_all_slots', { hoerbertDir: hoerbertDir.value })
@@ -515,7 +517,8 @@ function addToSlot(slot: number) {
 }
 
 async function removeFromSlot(slot: number, track: SlotTrack, index: number) {
-  if (!confirm(`"${track.name}" aus Slot ${slot} löschen?`)) return
+  const yes = await ask(`"${track.name}" aus Slot ${slot} löschen?`, { title: 'Track löschen', kind: 'warning' })
+  if (!yes) return
 
   if (track.isNew) {
     // Not yet on SD card, just remove from local state
@@ -539,7 +542,8 @@ async function removeFromSlot(slot: number, track: SlotTrack, index: number) {
 }
 
 async function clearSlot(slot: number) {
-  if (!confirm(`Alle ${slotFiles.value[slot].length} Tracks aus Slot ${slot} löschen?`)) return
+  const yes = await ask(`Alle ${slotFiles.value[slot].length} Tracks aus Slot ${slot} löschen?`, { title: 'Slot leeren', kind: 'warning' })
+  if (!yes) return
 
   const hasExisting = slotFiles.value[slot].some(t => !t.isNew)
   try {
