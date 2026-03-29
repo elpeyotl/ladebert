@@ -269,8 +269,8 @@ pub async fn download_audio(
         downloads.insert(event_id.clone(), pid);
     }
 
-    let stdout = child.stdout.take().expect("stdout");
-    let stderr = child.stderr.take().expect("stderr");
+    let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
     let mut reader = BufReader::new(stdout).lines();
     let mut err_reader = BufReader::new(stderr).lines();
 
