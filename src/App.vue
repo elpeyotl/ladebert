@@ -47,7 +47,14 @@
           <span class="nav-label">Settings</span>
         </button>
       </nav>
-      <div class="sidebar-version">v{{ appVersion }}</div>
+      <div class="sidebar-version">
+        <template v-if="updateAvailable">
+          <a class="update-link" href="#" @click.prevent="openUpdateUrl" title="Update herunterladen">
+            v{{ appVersion }} → v{{ updateVersion }}
+          </a>
+        </template>
+        <template v-else>v{{ appVersion }}</template>
+      </div>
     </aside>
 
     <!-- Main content -->
@@ -191,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, provide, reactive, h, computed, nextTick } from 'vue'
+import { ref, provide, reactive, h, computed, nextTick, onMounted } from 'vue'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import YouTube from './views/YouTube.vue'
@@ -493,6 +500,35 @@ function onAudioError() {
   playerState.loading = false
 }
 
+// Update check
+const updateAvailable = ref(false)
+const updateVersion = ref('')
+const updateUrl = ref('')
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch('https://api.github.com/repos/elpeyotl/ladebert/releases/latest')
+    if (!res.ok) return
+    const data = await res.json()
+    const latest = (data.tag_name || '').replace(/^v/, '')
+    if (latest && latest !== appVersion) {
+      updateAvailable.value = true
+      updateVersion.value = latest
+      updateUrl.value = data.html_url
+    }
+  } catch {
+    // Silently ignore – no network, no problem
+  }
+}
+
+function openUpdateUrl() {
+  invoke('plugin:shell|open', { path: updateUrl.value })
+}
+
+onMounted(() => {
+  checkForUpdate()
+})
+
 // Provide settings and download state to child components
 provide('settings', settings)
 provide('downloadState', downloadState)
@@ -537,6 +573,21 @@ provide('playFile', playFile)
   text-align: center;
   padding: 8px 0;
   font-family: 'DM Mono', monospace;
+}
+
+.update-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  animation: pulse-update 2s ease-in-out infinite;
+}
+.update-link:hover {
+  text-decoration: underline;
+}
+
+@keyframes pulse-update {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .settings-btn {
