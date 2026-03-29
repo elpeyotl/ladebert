@@ -1,0 +1,81 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#c4935a"/>
+
+  <!-- Wooden frame border -->
+  <rect x="8" y="8" width="496" height="496" rx="76" fill="none" stroke="#a87842" stroke-width="6"/>
+
+  <!-- Inner panel (cream/birch color) -->
+  <rect x="32" y="50" width="448" height="420" rx="20" fill="#f5edd4"/>
+  <rect x="32" y="50" width="448" height="420" rx="20" stroke="#e0d5b8" stroke-width="2"/>
+
+  <!-- Handle -->
+  <path d="M160 50 Q160 10 200 10 L312 10 Q352 10 352 50" fill="none" stroke="#c4935a" stroke-width="24" stroke-linecap="round"/>
+  <path d="M160 50 Q160 14 200 14 L312 14 Q352 14 352 50" fill="none" stroke="#a87842" stroke-width="18" stroke-linecap="round"/>
+
+  <!-- Volume knob (top right) -->
+  <circle cx="420" cy="50" r="18" fill="#888"/>
+  <circle cx="420" cy="50" r="16" fill="#777"/>
+  <rect x="411" y="50" width="18" height="2" rx="1" fill="#aaa" transform="rotate(-45 420 50)"/>
+  <circle cx="420" cy="50" r="14" fill="#777" stroke="#999" stroke-width="1"/>
+  <!-- Knurled texture lines -->
+  <circle cx="420" cy="50" r="17" fill="none" stroke="#666" stroke-width="1" stroke-dasharray="2 2"/>
+  <line x1="420" y1="35" x2="420" y2="42" stroke="#aaa" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Speaker grille - large circle -->
+  <circle cx="186" cy="250" r="130" fill="#f0e8cf" stroke="#e0d5b8" stroke-width="3"/>
+  <!-- Decorative speaker border (scalloped/cloud shape) -->
+  <circle cx="186" cy="250" r="120" fill="#e8dfc6" stroke="#d5ccb3" stroke-width="2"/>
+  <!-- Speaker mesh (dot pattern) -->
+  <!-- Row pattern for speaker dots -->
+  <g fill="#3d3225" opacity="0.7">
+    <!-- Generate dot grid for speaker -->
+    <circle cx="106" cy="170" r="4"/><circle cx="126" cy="170" r="4"/><circle cx="146" cy="170" r="4"/><circle cx="166" cy="170" r="4"/><circle cx="186" cy="170" r="4"/><circle cx="206" cy="170" r="4"/><circle cx="226" cy="170" r="4"/><circle cx="246" cy="170" r="4"/><circle cx="266" cy="170" r="4"/>
+    <circle cx="96" cy="190" r="4"/><circle cx="116" cy="190" r="4"/><circle cx="136" cy="190" r="4"/><circle cx="156" cy="190" r="4"/><circle cx="176" cy="190" r="4"/><circle cx="196" cy="190" r="4"/><circle cx="216" cy="190" r="4"/><circle cx="236" cy="190" r="4"/><circle cx="256" cy="190" r="4"/><circle cx="276" cy="190" r="4"/>
+    <circle cx="86" cy="210" r="4"/><circle cx="106" cy="210" r="4"/><circle cx="126" cy="210" r="4"/><circle cx="146" cy="210" r="4"/><circle cx="166" cy="210" r="4"/><circle cx="186" cy="210" r="4"/><circle cx="206" cy="210" r="4"/><circle cx="226" cy="210" r="4"/><circle cx="246" cy="210" r="4"/><circle cx="266" cy="210" r="4"/><circle cx="286" cy="210" r="4"/>
+    <circle cx="76" cy="230" r="4"/><circle cx="96" cy="230" r="4"/><circle cx="116" cy="230" r="4"/><circle cx="136" cy="230" r="4"/><circle cx="156" cy="230" r="4"/><circle cx="176" cy="230" r="4"/><circle cx="196" cy="230" r="4"/><circle cx="216" cy="230" r="4"/><circle cx="236" cy="230" r="4"/><circle cx="256" cy="230" r="4"/><circle cx="276" cy="230" r="4"/><circle cx="296" cy="230" r="4"/>
+    <circle cx="72" cy="250" r="4"/><circle cx="92" cy="250" r="4"/><circle cx="112" cy="250" r="4"/><circle cx="132" cy="250" r="4"/><circle cx="152" cy="250" r="4"/><circle cx="172" cy="250" r="4"/><circle cx="192" cy="250" r="4"/><circle cx="212" cy="250" r="4"/><circle cx="232" cy="250" r="4"/><circle cx="252" cy="250" r="4"/><circle cx="272" cy="250" r="4"/><circle cx="292" cy="250" r="4"/>
+    <circle cx="76" cy="270" r="4"/><circle cx="96" cy="270" r="4"/><circle cx="116" cy="270" r="4"/><circle cx="136" cy="270" r="4"/><circle cx="156" cy="270" r="4"/><circle cx="176" cy="270" r="4"/><circle cx="196" cy="270" r="4"/><circle cx="216" cy="270" r="4"/><circle cx="236" cy="270" r="4"/><circle cx="256" cy="270" r="4"/><circle cx="276" cy="270" r="4"/><circle cx="296" cy="270" r="4"/>
+    <circle cx="86" cy="290" r="4"/><circle cx="106" cy="290" r="4"/><circle cx="126" cy="290" r="4"/><circle cx="146" cy="290" r="4"/><circle cx="166" cy="290" r="4"/><circle cx="186" cy="290" r="4"/><circle cx="206" cy="290" r="4"/><circle cx="226" cy="290" r="4"/><circle cx="246" cy="290" r="4"/><circle cx="266" cy="290" r="4"/><circle cx="286" cy="290" r="4"/>
+    <circle cx="96" cy="310" r="4"/><circle cx="116" cy="310" r="4"/><circle cx="136" cy="310" r="4"/><circle cx="156" cy="310" r="4"/><circle cx="176" cy="310" r="4"/><circle cx="196" cy="310" r="4"/><circle cx="216" cy="310" r="4"/><circle cx="236" cy="310" r="4"/><circle cx="256" cy="310" r="4"/><circle cx="276" cy="310" r="4"/>
+    <circle cx="106" cy="330" r="4"/><circle cx="126" cy="330" r="4"/><circle cx="146" cy="330" r="4"/><circle cx="166" cy="330" r="4"/><circle cx="186" cy="330" r="4"/><circle cx="206" cy="330" r="4"/><circle cx="226" cy="330" r="4"/><circle cx="246" cy="330" r="4"/><circle cx="266" cy="330" r="4"/>
+  </g>
+
+  <!-- Corner screws on speaker -->
+  <circle cx="90" cy="154" r="7" fill="#c0c0c0" stroke="#999" stroke-width="1"/>
+  <line x1="86" y1="154" x2="94" y2="154" stroke="#888" stroke-width="1.5"/>
+  <circle cx="282" cy="154" r="7" fill="#c0c0c0" stroke="#999" stroke-width="1"/>
+  <line x1="278" y1="154" x2="286" y2="154" stroke="#888" stroke-width="1.5"/>
+  <circle cx="90" cy="346" r="7" fill="#c0c0c0" stroke="#999" stroke-width="1"/>
+  <line x1="86" y1="346" x2="94" y2="346" stroke="#888" stroke-width="1.5"/>
+  <circle cx="282" cy="346" r="7" fill="#c0c0c0" stroke="#999" stroke-width="1"/>
+  <line x1="278" y1="346" x2="286" y2="346" stroke="#888" stroke-width="1.5"/>
+
+  <!-- 9 colored buttons - 3x3 grid (right side) -->
+  <!-- Row 1 -->
+  <circle cx="358" cy="150" r="20" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+  <circle cx="358" cy="150" r="16" fill="#2d2017"/>
+  <circle cx="408" cy="150" r="20" fill="#e53935" stroke="#c62828" stroke-width="1"/>
+  <circle cx="458" cy="150" r="20" fill="#1e88e5" stroke="#1565c0" stroke-width="1"/>
+
+  <!-- Row 2 -->
+  <circle cx="358" cy="210" r="20" fill="#43a047" stroke="#2e7d32" stroke-width="1"/>
+  <circle cx="408" cy="210" r="20" fill="#fdd835" stroke="#f9a825" stroke-width="1"/>
+  <circle cx="458" cy="210" r="20" fill="#00bcd4" stroke="#00838f" stroke-width="1"/>
+
+  <!-- Row 3 -->
+  <circle cx="358" cy="270" r="20" fill="#81d4fa" stroke="#4fc3f7" stroke-width="1"/>
+  <circle cx="408" cy="270" r="20" fill="#ff7043" stroke="#e64a19" stroke-width="1"/>
+  <circle cx="458" cy="270" r="20" fill="#2e7d32" stroke="#1b5e20" stroke-width="1"/>
+
+  <!-- Bottom row - play/pause/prev/next buttons (smaller, dark) -->
+  <circle cx="358" cy="340" r="14" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+  <circle cx="400" cy="340" r="14" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+  <circle cx="442" cy="340" r="14" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+
+  <!-- hörbert text -->
+  <text x="360" y="420" font-family="Georgia, serif" font-size="40" font-style="italic" fill="#c4935a" letter-spacing="1">hörbert</text>
+
+  <!-- Small LED/indicator -->
+  <circle cx="462" cy="430" r="5" fill="#1a1a1a"/>
+</svg>
