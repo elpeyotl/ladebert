@@ -1114,7 +1114,7 @@ pub async fn eject_disk(path: String) -> Result<(), String> {
 
 /// Format SD card as FAT32 (macOS: diskutil)
 #[tauri::command]
-pub async fn format_sd_card(path: String) -> Result<(), String> {
+pub async fn format_sd_card(path: String) -> Result<String, String> {
     let expanded = expand_tilde(&path);
 
     // Find the disk identifier for the given mount path
@@ -1142,11 +1142,16 @@ pub async fn format_sd_card(path: String) -> Result<(), String> {
         .ok_or("Konnte Device-ID nicht ermitteln")?;
 
     // Get the whole disk (e.g. "disk4" from "disk4s1")
-    let whole_disk = device_id
-        .split('s')
-        .next()
-        .ok_or("Konnte Disk nicht ermitteln")?
-        .to_string();
+    // Find the last 's' followed by digits = partition separator
+    let whole_disk = if let Some(pos) = device_id.rfind('s') {
+        if device_id[pos+1..].chars().all(|c| c.is_ascii_digit()) {
+            device_id[..pos].to_string()
+        } else {
+            device_id.clone()
+        }
+    } else {
+        device_id.clone()
+    };
 
     // Format as FAT32 with name "HOERBERT"
     let output = Command::new("diskutil")
@@ -1160,7 +1165,17 @@ pub async fn format_sd_card(path: String) -> Result<(), String> {
         return Err(format!("Formatierung fehlgeschlagen: {}", stderr.trim()));
     }
 
-    Ok(())
+    // Wait for the new volume to be mounted (up to 10 seconds)
+    let new_mount = format!("/Volumes/HOERBERT");
+    for _ in 0..20 {
+        if std::path::Path::new(&new_mount).exists() {
+            return Ok(new_mount);
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
+
+    // Fallback: return expected path even if not yet mounted
+    Ok(new_mount)
 }
 
 /// Delete a single track from a hörbert slot and re-number remaining files

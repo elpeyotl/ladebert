@@ -5,7 +5,7 @@
         <h1>Hörbert Manager</h1>
         <span class="badge badge-green" v-if="hoerbertDir">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-          SD-Karte
+          {{ sdCardName }}
           <button class="eject-btn" @click.stop="ejectSdCard" title="SD-Karte auswerfen">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 5l-8 10h16L12 5z"/><rect x="4" y="18" width="16" height="2" rx="1"/>
@@ -263,6 +263,12 @@ const playFile = inject('playFile') as (title: string, artist: string, filePath:
 const hoerbertDir = ref(localStorage.getItem('hoerbertDir') || '')
 const defaultDownloadDir = '~/Downloads/Hörbert'
 const diskSpace = ref<{ total: number; used: number; free: number } | null>(null)
+const sdCardName = computed(() => {
+  const dir = hoerbertDir.value
+  if (!dir) return 'SD-Karte'
+  const parts = dir.replace(/\/+$/, '').split('/')
+  return parts[parts.length - 1] || 'SD-Karte'
+})
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
@@ -414,17 +420,31 @@ async function formatSdCard() {
   if (!yes) return
 
   formatting.value = true
+  downloadState.active = true
+  downloadState.currentTrack = 'SD-Karte wird formatiert...'
+  downloadState.trackPercent = 0
+  downloadState.speed = ''
+  downloadState.eta = 'Bitte warten'
+  downloadState.totalTracks = 1
+  downloadState.currentIndex = 0
+
   try {
-    await invoke('format_sd_card', { path: hoerbertDir.value })
+    const newPath = await invoke<string>('format_sd_card', { path: hoerbertDir.value })
+    // Update path to new mount point (e.g. /Volumes/HOERBERT)
+    hoerbertDir.value = newPath
+    localStorage.setItem('hoerbertDir', newPath)
     for (let i = 1; i <= 9; i++) slotFiles.value[i] = []
     saveSlots()
-    // Reload after format – the mount path might be the same
     await loadSlotsFromCard()
     await loadDiskSpace()
+    downloadState.currentTrack = 'Formatierung abgeschlossen!'
+    downloadState.eta = ''
+    downloadState.currentIndex = 1
   } catch (e) {
     alert('Formatierung fehlgeschlagen: ' + e)
   } finally {
     formatting.value = false
+    setTimeout(() => { downloadState.active = false }, 3000)
   }
 }
 

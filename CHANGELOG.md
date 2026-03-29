@@ -3,7 +3,10 @@
 ## v1.3.0 (2026-03-29)
 
 ### Neu
-- SD-Karte formatieren (FAT32) direkt in der App
+- SD-Karte formatieren (FAT32, Label "HOERBERT") direkt in der App
+- Fortschrittsanzeige während der Formatierung
+- SD-Karten-Name wird im Badge angezeigt (z.B. "HOERBERT", "NO NAME")
+- Nach Formatierung wird neuer Mount-Pfad automatisch erkannt
 - YouTube Playlist-Suche: Suche nach Alben und Playlisten
 - Verständliche Fehlermeldung wenn SD-Karte voll ist
 - Unvollständige WAV-Dateien werden bei Fehler aufgeräumt
