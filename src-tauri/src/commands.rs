@@ -902,11 +902,17 @@ pub async fn write_to_hoerbert(
         }
 
         if !output.status.success() {
+            // Clean up incomplete file
+            let _ = std::fs::remove_file(&dest_path);
+
             // If killed by signal (cancelled), return early without error alert
             if output.status.code().is_none() {
                 return Err("Abgebrochen".to_string());
             }
             let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("No space left on device") {
+                return Err(format!("SD-Karte voll! Nicht genug Speicherplatz für \"{}\".", file));
+            }
             return Err(format!("Konvertierung fehlgeschlagen für {}: {}", file, stderr.trim()));
         }
 
@@ -1103,6 +1109,57 @@ pub async fn eject_disk(path: String) -> Result<(), String> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("Auswerfen fehlgeschlagen: {}", stderr.trim()));
     }
+    Ok(())
+}
+
+/// Format SD card as FAT32 (macOS: diskutil)
+#[tauri::command]
+pub async fn format_sd_card(path: String) -> Result<(), String> {
+    let expanded = expand_tilde(&path);
+
+    // Find the disk identifier for the given mount path
+    let info = Command::new("diskutil")
+        .args(["info", "-plist", &expanded])
+        .output()
+        .await
+        .map_err(|e| format!("diskutil Fehler: {}", e))?;
+
+    if !info.status.success() {
+        return Err("Konnte Disk-Info nicht lesen. Ist die SD-Karte eingelegt?".to_string());
+    }
+
+    let stdout = String::from_utf8_lossy(&info.stdout);
+
+    // Extract DeviceIdentifier from plist (e.g. "disk4s1")
+    let device_id = stdout
+        .find("<key>DeviceIdentifier</key>")
+        .and_then(|pos| {
+            let rest = &stdout[pos..];
+            let start = rest.find("<string>")? + 8;
+            let end = rest.find("</string>")?;
+            Some(rest[start..end].to_string())
+        })
+        .ok_or("Konnte Device-ID nicht ermitteln")?;
+
+    // Get the whole disk (e.g. "disk4" from "disk4s1")
+    let whole_disk = device_id
+        .split('s')
+        .next()
+        .ok_or("Konnte Disk nicht ermitteln")?
+        .to_string();
+
+    // Format as FAT32 with name "HOERBERT"
+    let output = Command::new("diskutil")
+        .args(["eraseDisk", "FAT32", "HOERBERT", &format!("/dev/{}", whole_disk)])
+        .output()
+        .await
+        .map_err(|e| format!("Formatierung fehlgeschlagen: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Formatierung fehlgeschlagen: {}", stderr.trim()));
+    }
+
     Ok(())
 }
 

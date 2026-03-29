@@ -23,6 +23,13 @@
           </svg>
           Alles löschen
         </button>
+        <button v-if="hoerbertDir" class="btn btn-ghost btn-danger" @click="formatSdCard" :disabled="formatting">
+          <span v-if="formatting" class="spinner" />
+          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          {{ formatting ? 'Formatiere...' : 'Formatieren' }}
+        </button>
         <button class="btn btn-ghost" @click="pickHoerbertDir">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -393,6 +400,31 @@ async function clearAllSlots() {
     await loadDiskSpace()
   } catch (e) {
     alert('Fehler beim Löschen: ' + e)
+  }
+}
+
+const formatting = ref(false)
+
+async function formatSdCard() {
+  if (!hoerbertDir.value) return
+  const yes = await ask(
+    'SD-Karte als FAT32 formatieren?\n\nALLE DATEN werden unwiderruflich gelöscht!',
+    { title: 'SD-Karte formatieren', kind: 'warning' }
+  )
+  if (!yes) return
+
+  formatting.value = true
+  try {
+    await invoke('format_sd_card', { path: hoerbertDir.value })
+    for (let i = 1; i <= 9; i++) slotFiles.value[i] = []
+    saveSlots()
+    // Reload after format – the mount path might be the same
+    await loadSlotsFromCard()
+    await loadDiskSpace()
+  } catch (e) {
+    alert('Formatierung fehlgeschlagen: ' + e)
+  } finally {
+    formatting.value = false
   }
 }
 

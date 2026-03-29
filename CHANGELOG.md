@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.3.0 (2026-03-29)
+
+### Neu
+- SD-Karte formatieren (FAT32) direkt in der App
+- YouTube Playlist-Suche: Suche nach Alben und Playlisten
+- Verständliche Fehlermeldung wenn SD-Karte voll ist
+- Unvollständige WAV-Dateien werden bei Fehler aufgeräumt
+
+### Bugfixes
+- Crash beim Schreiben auf SD-Karte behoben (UTF-8 Umlaute in Dateinamen)
+- XML-Sonderzeichen (& < >) werden jetzt korrekt escaped
+- Lösch-Dialoge blockieren jetzt zuverlässig (native Tauri-Dialoge)
+- Update-Check zeigt nur noch neuere Versionen an
+
 ## v1.2.0 (2026-03-29)
 
 ### Neu

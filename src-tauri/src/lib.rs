@@ -25,6 +25,7 @@ pub fn run() {
             copy_to_hoerbert_slot,
             clear_all_slots,
             eject_disk,
+            format_sd_card,
             delete_slot_track,
             clear_slot,
             cancel_download,
