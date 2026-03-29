@@ -1,4 +1,4 @@
-# 🎵 Hörbert Downloader
+# 🎵 Ladebert
 
 Lokale macOS Desktop-App zum Downloaden von YouTube-Audio als MP3 für den Hörbert Kinder-Audioplayer.
 

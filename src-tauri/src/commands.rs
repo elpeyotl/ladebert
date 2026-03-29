@@ -837,7 +837,7 @@ fn update_hoerbert_xml(
 
     // Read existing XML or create new
     let mut xml_content = std::fs::read_to_string(&xml_path).unwrap_or_else(|_| {
-        String::from("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<hoerbert>\n\t<hoerbert_playlists>\n\t\t<version>1.0</version>\n\t\t<generator>hoerbert-downloader</generator>\n\t\t<folders>\n\t\t</folders>\n\t</hoerbert_playlists>\n</hoerbert>")
+        String::from("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<hoerbert>\n\t<hoerbert_playlists>\n\t\t<version>1.0</version>\n\t\t<generator>ladebert</generator>\n\t\t<folders>\n\t\t</folders>\n\t</hoerbert_playlists>\n</hoerbert>")
     });
 
     // Build new item XML entries

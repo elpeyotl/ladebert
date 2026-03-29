@@ -2,7 +2,7 @@
 
 ## v1.0.0 (2026-03-29)
 
-Erster Release der Hörbert Downloader App.
+Erster Release der Ladebert App.
 
 ### YouTube
 - Suche nach Songs, Hörspielen und Kindercontent

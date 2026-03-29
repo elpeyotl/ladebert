@@ -1,14 +1,14 @@
 [package]
-name = "hoerbert-downloader"
+name = "ladebert"
 version = "1.0.0"
-description = "Hörbert Downloader - YouTube & Spotify to MP3"
+description = "Ladebert - YouTube & Spotify to MP3 für Hörbert"
 authors = []
 license = ""
 repository = "https://github.com/elpeyotl/ladebert"
 edition = "2021"
 
 [lib]
-name = "hoerbert_downloader_lib"
+name = "ladebert_lib"
 crate-type = ["lib"]
 
 [build-dependencies]

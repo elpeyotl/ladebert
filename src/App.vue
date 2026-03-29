@@ -3,27 +3,26 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <!-- Body -->
-          <rect x="2" y="4" width="28" height="24" rx="4" fill="#d4a574"/>
-          <rect x="2" y="4" width="28" height="24" rx="4" stroke="#b8956a" stroke-width="0.5"/>
+        <svg width="32" height="32" viewBox="0 0 512 512" fill="none">
+          <rect width="512" height="512" rx="80" fill="#c4935a"/>
+          <rect x="32" y="50" width="448" height="420" rx="20" fill="#f5edd4"/>
           <!-- Speaker grille -->
-          <rect x="8" y="7" width="16" height="8" rx="2" fill="#8b6f4e"/>
-          <line x1="10" y1="9" x2="22" y2="9" stroke="#a0845c" stroke-width="0.7"/>
-          <line x1="10" y1="11" x2="22" y2="11" stroke="#a0845c" stroke-width="0.7"/>
-          <line x1="10" y1="13" x2="22" y2="13" stroke="#a0845c" stroke-width="0.7"/>
-          <!-- Buttons row 1 -->
-          <circle cx="8" cy="20" r="2.5" fill="#ef4444"/>
-          <circle cx="13.5" cy="20" r="2.5" fill="#f59e0b"/>
-          <circle cx="19" cy="20" r="2.5" fill="#22c55e"/>
-          <circle cx="24.5" cy="20" r="2.5" fill="#3b82f6"/>
-          <!-- Button row 2 -->
-          <circle cx="8" cy="25.5" r="1.5" fill="#8b5cf6"/>
-          <circle cx="12" cy="25.5" r="1.5" fill="#ec4899"/>
-          <circle cx="16" cy="25.5" r="1.5" fill="#2dd4bf"/>
-          <!-- Volume knob -->
-          <circle cx="23" cy="25.5" r="2" fill="#1a1a1a" stroke="#333" stroke-width="0.5"/>
-          <line x1="23" y1="24" x2="23" y2="25" stroke="#666" stroke-width="0.7" stroke-linecap="round"/>
+          <circle cx="186" cy="250" r="120" fill="#e8dfc6"/>
+          <g fill="#3d3225" opacity="0.6">
+            <circle cx="136" cy="200" r="8"/><circle cx="176" cy="200" r="8"/><circle cx="216" cy="200" r="8"/><circle cx="256" cy="200" r="8"/>
+            <circle cx="116" cy="240" r="8"/><circle cx="156" cy="240" r="8"/><circle cx="196" cy="240" r="8"/><circle cx="236" cy="240" r="8"/><circle cx="276" cy="240" r="8"/>
+            <circle cx="136" cy="280" r="8"/><circle cx="176" cy="280" r="8"/><circle cx="216" cy="280" r="8"/><circle cx="256" cy="280" r="8"/>
+          </g>
+          <!-- 9 buttons 3x3 -->
+          <circle cx="358" cy="150" r="24" fill="#e53935"/>
+          <circle cx="408" cy="150" r="24" fill="#1e88e5"/>
+          <circle cx="458" cy="150" r="24" fill="#43a047"/>
+          <circle cx="358" cy="220" r="24" fill="#fdd835"/>
+          <circle cx="408" cy="220" r="24" fill="#00bcd4"/>
+          <circle cx="458" cy="220" r="24" fill="#81d4fa"/>
+          <circle cx="358" cy="290" r="24" fill="#ff7043"/>
+          <circle cx="408" cy="290" r="24" fill="#2e7d32"/>
+          <circle cx="458" cy="290" r="24" fill="#8b5cf6"/>
         </svg>
       </div>
 

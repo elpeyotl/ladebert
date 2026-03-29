@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ladebert – MP3s für deinen Hörbert</title>
+  <meta name="description" content="Ladebert lädt YouTube-Audio als MP3 auf deine Hörbert SD-Karte. Für Eltern die ihren Kindern einen Hörbert statt ein Smartphone geben wollen." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #111110;
+      --bg-card: #1a1a18;
+      --bg-elevated: #222220;
+      --bg-warm: #1e1d1a;
+      --mint: #5ec4b0;
+      --mint-light: #7dd4c4;
+      --mint-dim: rgba(94, 196, 176, 0.15);
+      --amber: #e8a020;
+      --amber-light: #f5c04a;
+      --text: #e8e4dc;
+      --text-muted: #a3a3a3;
+      --text-faint: #737373;
+      --rust: #c4542a;
+      --border: rgba(255,255,255,0.08);
+      --border-light: rgba(255,255,255,0.12);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(17, 17, 16, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .logo-mark {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-coffee {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--amber);
+      color: var(--bg);
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-coffee:hover { background: var(--amber-light); transform: translateY(-1px); }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1.5px solid var(--border-light);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 140px 40px 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--mint-dim);
+      color: var(--mint);
+      padding: 5px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      border: 1px solid rgba(94, 196, 176, 0.2);
+    }
+
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(40px, 5vw, 58px);
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 24px;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--mint);
+    }
+
+    .hero-desc {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 480px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--mint);
+      color: var(--bg);
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-download:hover { background: var(--mint-light); transform: translateY(-2px); }
+
+    .hero-note {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 12px;
+    }
+
+    /* Hero screenshot */
+    .hero-visual {
+      position: relative;
+    }
+
+    .hero-screenshot {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
+    }
+
+    .floating-badge {
+      position: absolute;
+      bottom: -16px;
+      right: -16px;
+      background: var(--mint);
+      color: var(--bg);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(94, 196, 176, 0.3);
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .floating-badge span {
+      display: block;
+      font-size: 20px;
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* ── Screenshots carousel ── */
+    .screenshots {
+      padding: 80px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .screenshots-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .screenshot-card {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .screenshot-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .screenshot-card img {
+      width: 100%;
+      display: block;
+    }
+
+    .screenshot-label {
+      position: absolute;
+      bottom: 0;
+      left: 0; right: 0;
+      padding: 16px 20px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* ── Story section ── */
+    .story {
+      background: var(--bg-warm);
+      padding: 100px 40px;
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .story::before {
+      content: '\201C';
+      position: absolute;
+      top: -20px;
+      left: 40px;
+      font-size: 240px;
+      font-family: 'Fraunces', serif;
+      color: rgba(255,255,255,0.03);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .story-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .story-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 32px;
+    }
+
+    .story-text {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(22px, 3vw, 30px);
+      font-weight: 300;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.55;
+    }
+
+    .story-text strong {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .story-text em {
+      font-style: italic;
+      color: var(--mint);
+    }
+
+    .story-author {
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .author-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 2px solid var(--border-light);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      color: var(--mint);
+    }
+
+    .author-info { color: var(--text-faint); font-size: 14px; }
+    .author-name { color: var(--text); font-weight: 600; font-size: 15px; }
+
+    /* ── Features ── */
+    .features {
+      padding: 100px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 600;
+      letter-spacing: -1.5px;
+      line-height: 1.15;
+      margin-bottom: 60px;
+      max-width: 600px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      padding: 36px 32px;
+      transition: background 0.2s;
+      border: 1px solid var(--border);
+    }
+
+    .feature-card:hover { background: var(--bg-elevated); }
+    .feature-card:first-child { border-radius: 16px 0 0 16px; }
+    .feature-card:last-child { border-radius: 0 16px 16px 0; }
+
+    .feature-icon {
+      width: 48px; height: 48px;
+      background: var(--mint-dim);
+      border: 1px solid rgba(94, 196, 176, 0.2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px;
+      font-size: 22px;
+    }
+
+    .feature-title {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .feature-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    /* ── How it works ── */
+    .how {
+      background: var(--bg-card);
+      padding: 100px 40px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .how-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      margin-top: 60px;
+    }
+
+    .step {
+      position: relative;
+    }
+
+    .step::after {
+      content: '\2192';
+      position: absolute;
+      top: 20px;
+      right: -24px;
+      color: var(--text-faint);
+      font-size: 20px;
+    }
+
+    .step:last-child::after { display: none; }
+
+    .step-num {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--mint);
+      color: var(--bg);
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Legal note ── */
+    .legal {
+      padding: 60px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .legal-card {
+      background: rgba(196, 84, 42, 0.08);
+      border: 1px solid rgba(196, 84, 42, 0.25);
+      border-radius: 16px;
+      padding: 36px 40px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .legal-icon {
+      font-size: 28px;
+      margin-top: 2px;
+    }
+
+    .legal-title {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #e07050;
+    }
+
+    .legal-text {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    .legal-text strong { color: var(--text); }
+
+    /* ── CTA ── */
+    .cta {
+      padding: 100px 40px;
+      text-align: center;
+      background: var(--bg-warm);
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+    }
+
+    .cta::before {
+      content: 'Ladebert';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-size: 280px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.02);
+      pointer-events: none;
+      letter-spacing: -10px;
+      white-space: nowrap;
+    }
+
+    .cta-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(36px, 5vw, 60px);
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .cta-sub {
+      color: var(--text-faint);
+      font-size: 18px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    .btn-download-large {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--mint);
+      color: var(--bg);
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 17px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-download-large:hover { background: var(--mint-light); transform: translateY(-2px); }
+
+    .btn-coffee-large {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1.5px solid var(--border-light);
+      padding: 15px 28px;
+      border-radius: 12px;
+      font-weight: 500;
+      font-size: 16px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-coffee-large:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-faint);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-faint);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text-muted); }
+
+    /* ── Changelog ── */
+    .changelog {
+      padding: 100px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .changelog-entry {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 40px;
+    }
+
+    .changelog-version {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .version-badge {
+      background: var(--mint);
+      color: var(--bg);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .version-date {
+      color: var(--text-faint);
+      font-size: 14px;
+    }
+
+    .changelog-summary {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 24px;
+    }
+
+    .changelog-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .changelog-group h4 {
+      font-family: 'Fraunces', serif;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .changelog-group ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .changelog-group li {
+      font-size: 14px;
+      color: var(--text-muted);
+      padding: 3px 0;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .changelog-group li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 11px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mint);
+      opacity: 0.5;
+    }
+
+    /* ── Scroll animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-logo .logo-text { display: none; }
+
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 120px 20px 60px;
+        gap: 48px;
+      }
+
+      .screenshots-grid { grid-template-columns: 1fr; }
+
+      .features-grid { grid-template-columns: 1fr; }
+      .feature-card:first-child { border-radius: 16px 16px 0 0; }
+      .feature-card:last-child { border-radius: 0 0 16px 16px; }
+
+      .steps { grid-template-columns: 1fr 1fr; }
+      .step::after { display: none; }
+
+      .legal-card { grid-template-columns: 1fr; }
+
+      .story, .features, .how, .legal, .cta, .screenshots { padding: 60px 20px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg class="logo-mark" width="36" height="36" viewBox="0 0 512 512" fill="none">
+        <rect width="512" height="512" rx="80" fill="#c4935a"/>
+        <rect x="32" y="50" width="448" height="420" rx="20" fill="#f5edd4"/>
+        <circle cx="186" cy="250" r="120" fill="#e8dfc6"/>
+        <g fill="#3d3225" opacity="0.6">
+          <circle cx="136" cy="200" r="8"/><circle cx="176" cy="200" r="8"/><circle cx="216" cy="200" r="8"/><circle cx="256" cy="200" r="8"/>
+          <circle cx="116" cy="240" r="8"/><circle cx="156" cy="240" r="8"/><circle cx="196" cy="240" r="8"/><circle cx="236" cy="240" r="8"/><circle cx="276" cy="240" r="8"/>
+          <circle cx="136" cy="280" r="8"/><circle cx="176" cy="280" r="8"/><circle cx="216" cy="280" r="8"/><circle cx="256" cy="280" r="8"/>
+        </g>
+        <circle cx="358" cy="150" r="24" fill="#e53935"/>
+        <circle cx="408" cy="150" r="24" fill="#1e88e5"/>
+        <circle cx="458" cy="150" r="24" fill="#43a047"/>
+        <circle cx="358" cy="220" r="24" fill="#fdd835"/>
+        <circle cx="408" cy="220" r="24" fill="#00bcd4"/>
+        <circle cx="458" cy="220" r="24" fill="#81d4fa"/>
+        <circle cx="358" cy="290" r="24" fill="#ff7043"/>
+        <circle cx="408" cy="290" r="24" fill="#2e7d32"/>
+        <circle cx="458" cy="290" r="24" fill="#8b5cf6"/>
+      </svg>
+    <span class="logo-text">Ladebert</span>
+  </a>
+  <div class="nav-right">
+    <a href="https://buymeacoffee.com/elpeyotl" class="btn-coffee" target="_blank">
+      Kaffee spendieren
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">
+      Fur Horbert-Eltern
+    </div>
+    <h1 class="hero-title">
+      Musik laden.<br>
+      <em>Ohne Streaming.<br>Ohne Display.</em>
+    </h1>
+    <p class="hero-desc">
+      Ladebert lädt YouTube-Audio als MP3 direkt auf deine Hörbert SD-Karte –
+      mit Spotify-Import und einem einfachen Slot-Manager für alle 9 Hörbert-Tasten.
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/elpeyotl/ladebert/releases/latest/download/Ladebert.dmg" class="btn-download">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Für macOS laden
+      </a>
+      <a href="https://buymeacoffee.com/elpeyotl" target="_blank" class="btn-coffee">
+        Kaffee spendieren
+      </a>
+    </div>
+    <p class="hero-note">macOS · Gratis · Open Source</p>
+  </div>
+
+  <div class="hero-visual">
+    <!-- Screenshot: YouTube search -->
+    <img src="screenshots/youtube.png" alt="Ladebert YouTube-Suche" class="hero-screenshot" />
+    <div class="floating-badge">
+      <span>9</span>
+      Hörbert-Slots
+    </div>
+  </div>
+</section>
+
+<!-- Screenshots -->
+<section class="screenshots">
+  <div class="section-eyebrow">Die App</div>
+  <h2 class="section-title">Alles auf einen Blick</h2>
+  <div class="screenshots-grid">
+    <div class="screenshot-card reveal">
+      <img src="screenshots/hoerbert.png" alt="Hörbert Manager mit 9 Slots" />
+      <div class="screenshot-label">Hörbert Manager – 9 Slots, SD-Karte, Drag & Drop</div>
+    </div>
+    <div class="screenshot-card reveal">
+      <img src="screenshots/spotify.png" alt="Spotify Import" />
+      <div class="screenshot-label">Spotify – Playlists importieren und laden</div>
+    </div>
+    <div class="screenshot-card reveal">
+      <img src="screenshots/settings.png" alt="Einstellungen" />
+      <div class="screenshot-label">Einstellungen – Format, Sprache, Download-Ordner</div>
+    </div>
+    <div class="screenshot-card reveal">
+      <img src="screenshots/youtube.png" alt="YouTube Suche mit Kategorien" />
+      <div class="screenshot-label">YouTube – Kategorien, Filter, Batch-Download</div>
+    </div>
+  </div>
+</section>
+
+<!-- Story -->
+<section class="story">
+  <div class="story-inner">
+    <div class="story-label">Warum Ladebert existiert</div>
+    <p class="story-text">
+      Mein Sohn hat einen <strong>Hörbert</strong>. Kein Display, keine App, keine Ablenkung –
+      einfach neun Tasten und Geschichten. Das beste Kindergerät das ich kenne.
+      <br><br>
+      Anfangs haben wir MP3s gekauft – Amazon, Ex Libris. Dann CDs gerippt.
+      Aber <em>CD-Laufwerke gibt es kaum noch</em>, und MP3s zum Kaufen sind
+      praktisch verschwunden. Streaming bleibt – aber dann hängt dein Kind
+      wieder am Tablet.
+      <br><br>
+      Also habe ich <strong>Ladebert gebaut</strong>. Nicht ganz legal, ja.
+      Aber es gibt schlicht keine andere Option mehr.
+    </p>
+    <div class="story-author">
+      <div class="author-avatar">C</div>
+      <div>
+        <div class="author-name">Chris, Zürich</div>
+        <div class="author-info">Vater, Entwickler, Hörbert-Fan</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="section-eyebrow">Was Ladebert kann</div>
+  <h2 class="section-title">Alles was du für den Hörbert brauchst</h2>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon">🎵</div>
+      <h3 class="feature-title">YouTube laden</h3>
+      <p class="feature-desc">
+        Suche direkt in der App nach Songs, Hörspielen oder Kinderliedern.
+        Einzelne Tracks oder ganze Playlists – als MP3 oder AAC, beste Qualität.
+      </p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🟢</div>
+      <h3 class="feature-title">Spotify Import</h3>
+      <p class="feature-desc">
+        Verbinde dein Spotify-Konto und importiere Playlists direkt.
+        Ladebert findet die passenden YouTube-Tracks automatisch.
+      </p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon">🎒</div>
+      <h3 class="feature-title">Hörbert Manager</h3>
+      <p class="feature-desc">
+        Ziehe MP3s per Drag & Drop auf die Slots 1–9.
+        Dann direkt auf die SD-Karte schreiben – fertig.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how">
+  <div class="how-inner">
+    <div class="section-eyebrow">So funktioniert es</div>
+    <h2 class="section-title">In vier Schritten bereit</h2>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <h3 class="step-title">Ladebert starten</h3>
+        <p class="step-desc">App herunterladen, yt-dlp via Homebrew installieren, fertig.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <h3 class="step-title">Suchen oder importieren</h3>
+        <p class="step-desc">YouTube-Suche oder Spotify-Playlist – du wählst was passt.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <h3 class="step-title">Slots zuweisen</h3>
+        <p class="step-desc">MP3s per Drag & Drop den 9 Hörbert-Tasten zuweisen.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">4</div>
+        <h3 class="step-title">Auf SD-Karte schreiben</h3>
+        <p class="step-desc">Einen Klick und alle Dateien landen in der richtigen Ordnerstruktur.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Legal note -->
+<section class="legal">
+  <div class="legal-card reveal">
+    <div class="legal-icon">&#9878;&#65039;</div>
+    <div>
+      <h3 class="legal-title">Ein Wort zur Rechtslage</h3>
+      <p class="legal-text">
+        Ladebert lädt urheberrechtlich geschützte Inhalte herunter. Das bewegt sich in einer <strong>rechtlichen Grauzone</strong>.
+        Ich biete die App gratis an und verdiene nichts daran – auch weil ich es so nicht könnte.
+        <br><br>
+        Was mich dazu gebracht hat: <strong>Es gibt schlicht keine legale Alternative mehr.</strong>
+        MP3-Shops haben geschlossen. CD-Laufwerke sind verschwunden. Streaming erfordert ein Display.
+        Wer seinem Kind einen Hörbert geben will ohne Smartphone, hat heute keine andere Wahl.
+        <br><br>
+        Nutze Ladebert auf eigene Verantwortung. Und wenn du kannst, <strong>kaufe die Inhalte die du schätzt</strong>
+        direkt beim Autor oder Label – wenn es eine Möglichkeit gibt.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Changelog -->
+<section class="changelog">
+  <div class="changelog-inner">
+    <div class="section-eyebrow">Changelog</div>
+    <h2 class="section-title">Was ist neu?</h2>
+
+    <div class="changelog-entry reveal">
+      <div class="changelog-version">
+        <span class="version-badge">v1.0.0</span>
+        <span class="version-date">29. März 2026</span>
+      </div>
+      <div class="changelog-content">
+        <p class="changelog-summary">Erster Release der Ladebert App.</p>
+        <div class="changelog-details">
+          <div class="changelog-group">
+            <h4>YouTube</h4>
+            <ul>
+              <li>Suche nach Songs, Hörspielen und Kindercontent</li>
+              <li>Kategorie-Chips: Hörspiel, Kinderlieder, Gute-Nacht, Märchen, Wissen</li>
+              <li>Dauer-Filter und Suchsprache</li>
+              <li>URL/Playlist-Modus, Pagination, Batch-Download</li>
+              <li>Automatische Ordner-Organisation nach Kategorie</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h4>Spotify</h4>
+            <ul>
+              <li>OAuth PKCE Verbindung</li>
+              <li>Playlist-Import und Download über YouTube-Suche</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h4>Hörbert Manager</h4>
+            <ul>
+              <li>9-Slot System mit Drag & Drop</li>
+              <li>SD-Karte lesen, beschreiben und auswerfen</li>
+              <li>Automatische WAV-Konvertierung</li>
+              <li>Speicherplatz-Anzeige</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h4>Downloads</h4>
+            <ul>
+              <li>Formate: Original, MP3, AAC</li>
+              <li>Download abbrechen, Duplikate überspringen</li>
+              <li>Fortschrittsanzeige mit Speed und ETA</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="download">
+  <h2 class="cta-title">Bereit für den<br>perfekten Hörbert?</h2>
+  <p class="cta-sub">Gratis. Open Source. Für macOS.</p>
+  <div class="cta-actions">
+    <a href="https://github.com/elpeyotl/ladebert/releases/latest/download/Ladebert.dmg" class="btn-download-large">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Ladebert herunterladen
+    </a>
+    <a href="https://buymeacoffee.com/elpeyotl" target="_blank" class="btn-coffee-large">
+      Kaffee spendieren – danke!
+    </a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">Ladebert</div>
+  <div class="footer-links">
+    <a href="https://github.com/elpeyotl/ladebert" target="_blank">GitHub</a>
+    <a href="https://buymeacoffee.com/elpeyotl" target="_blank">Buy me a coffee</a>
+    <a href="mailto:">Kontakt</a>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80)
+        observer.unobserve(entry.target)
+      }
+    })
+  }, { threshold: 0.15 })
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+</script>
+
+</body>
+</html>
