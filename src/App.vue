@@ -107,6 +107,7 @@
               <div class="download-bar-track">{{ downloadState.currentTrack }}</div>
               <div class="download-bar-status">
                 {{ downloadState.currentIndex }} / {{ downloadState.totalTracks }} Tracks
+                <span v-if="downloadState.queue.length > 0"> · {{ downloadState.queue.length }} in Warteschlange</span>
                 <span v-if="downloadState.speed"> · {{ downloadState.speed }}</span>
                 <span v-if="downloadState.eta"> · {{ downloadState.eta }}</span>
               </div>
@@ -191,8 +192,8 @@
 
 <script setup lang="ts">
 import { ref, provide, reactive, h, computed, nextTick } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-import { convertFileSrc } from '@tauri-apps/api/core'
+import { invoke, convertFileSrc } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import YouTube from './views/YouTube.vue'
 import Spotify from './views/Spotify.vue'
 import Hoerbert from './views/Hoerbert.vue'
@@ -233,7 +234,7 @@ const showSettings = ref(false)
 
 const settings = reactive({
   downloadDir: localStorage.getItem('downloadDir') || '',
-  format: (localStorage.getItem('format') as 'mp3' | 'aac' | 'original') || 'mp3',
+  format: (localStorage.getItem('format') as 'mp3' | 'aac' | 'original') || 'original',
   language: (localStorage.getItem('language') ?? 'deutsch') as string,
 })
 
@@ -249,7 +250,16 @@ function saveSettings() {
   showSettings.value = false
 }
 
-// Global download state
+// Download queue system
+interface QueueItem {
+  id: string
+  title: string
+  url: string
+  format: string
+  outputDir: string
+  eventId: string
+}
+
 const downloadState = reactive({
   active: false,
   cancelled: false,
@@ -261,10 +271,87 @@ const downloadState = reactive({
   eta: '',
   log: [] as string[],
   currentEventId: '',
+  queue: [] as QueueItem[],
+  processing: false,
 })
+
+let queueProcessing = false
+
+function addToQueue(items: QueueItem | QueueItem[]) {
+  const newItems = Array.isArray(items) ? items : [items]
+  downloadState.queue.push(...newItems)
+  // +1 for the currently downloading track if queue is active
+  const inProgress = queueProcessing ? 1 : 0
+  downloadState.totalTracks = downloadState.currentIndex + downloadState.queue.length + inProgress
+  if (!queueProcessing) {
+    processQueue()
+  }
+}
+
+async function processQueue() {
+  if (queueProcessing) return
+  queueProcessing = true
+  downloadState.active = true
+  downloadState.cancelled = false
+  downloadState.currentIndex = 0
+  downloadState.totalTracks = downloadState.queue.length
+
+  while (downloadState.queue.length > 0) {
+    if (downloadState.cancelled) break
+
+    const item = downloadState.queue.shift()!
+    downloadState.currentTrack = item.title
+    downloadState.trackPercent = 0
+    downloadState.speed = ''
+    downloadState.eta = ''
+    downloadState.currentEventId = item.eventId
+    // totalTracks may have grown if user added more items
+    downloadState.totalTracks = downloadState.currentIndex + downloadState.queue.length + 1
+
+    const unlisten1 = await listen<any>(`download-progress-${item.eventId}`, (event) => {
+      downloadState.trackPercent = event.payload.percent || 0
+      downloadState.speed = event.payload.speed || ''
+      downloadState.eta = event.payload.eta || ''
+    })
+    const unlisten2 = await listen(`download-done-${item.eventId}`, () => {
+      unlisten1()
+      unlisten2()
+    })
+
+    try {
+      await invoke('download_audio', {
+        url: item.url,
+        format: item.format,
+        outputDir: item.outputDir,
+        eventId: item.eventId,
+      })
+    } catch (e: any) {
+      if (downloadState.cancelled) break
+      console.error(`Download failed: ${item.title}`, e)
+      downloadState.log.push(`✗ ${item.title}`)
+    }
+
+    unlisten1()
+    unlisten2()
+    downloadState.currentIndex++
+  }
+
+  downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : 'Fertig!'
+  downloadState.totalTracks = downloadState.currentIndex
+
+  setTimeout(() => {
+    downloadState.active = false
+    downloadState.cancelled = false
+    downloadState.currentIndex = 0
+    downloadState.totalTracks = 0
+    downloadState.log = []
+    queueProcessing = false
+  }, 3000)
+}
 
 async function cancelDownloads() {
   downloadState.cancelled = true
+  downloadState.queue.length = 0
   try {
     await invoke('cancel_all_downloads')
   } catch (e) {
@@ -409,6 +496,7 @@ function onAudioError() {
 // Provide settings and download state to child components
 provide('settings', settings)
 provide('downloadState', downloadState)
+provide('addToQueue', addToQueue)
 provide('playTrack', playTrack)
 provide('playFile', playFile)
 </script>

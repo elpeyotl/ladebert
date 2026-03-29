@@ -105,7 +105,6 @@
               <button
                 class="btn btn-primary btn-sm"
                 @click="downloadAllResults"
-                :disabled="downloadState.active"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -140,7 +139,7 @@
               <button
                 class="btn btn-primary track-dl-btn"
                 @click="downloadTrack(track)"
-                :disabled="isDownloading(track.id) || downloadState.active"
+                :disabled="isDownloading(track.id)"
               >
                 <span v-if="isDownloading(track.id)" class="spinner" />
                 <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -178,7 +177,7 @@
               <button
                 class="btn btn-primary"
                 @click="downloadAll"
-                :disabled="downloadingAll || downloadState.active"
+                :disabled="downloadingAll"
               >
                 <span v-if="downloadingAll" class="spinner" />
                 <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -214,7 +213,7 @@
                 <button
                   class="btn btn-primary track-dl-btn"
                   @click="downloadTrack(track)"
-                  :disabled="isDownloading(track.id) || downloadState.active"
+                  :disabled="isDownloading(track.id)"
                 >
                   <span v-if="isDownloading(track.id)" class="spinner" />
                   <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -234,10 +233,10 @@
 <script setup lang="ts">
 import { ref, inject, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
 
 const settings = inject('settings') as any
 const downloadState = inject('downloadState') as any
+const addToQueue = inject('addToQueue') as (items: any) => void
 const playTrack = inject('playTrack') as (title: string, artist: string, query: string) => void
 
 type Mode = 'search' | 'url'
@@ -333,20 +332,9 @@ interface Track {
   url: string
 }
 
-interface Download {
-  id: string
-  title: string
-  percent: number
-  speed: string
-  eta: string
-  done: boolean
-  error: boolean
-}
-
 const results = ref<Track[]>([])
 const playlistTracks = ref<Track[]>([])
 const playlistTitle = ref('')
-const activeDownloads = ref<Download[]>([])
 const downloadingAll = ref(false)
 const loadingMore = ref(false)
 const searchResultCount = ref(10)
@@ -385,52 +373,23 @@ async function loadMore() {
   }
 }
 
-async function downloadAllResults() {
+function downloadAllResults() {
   const tracks = filteredResults.value
-  if (!tracks.length || downloadState.active) return
-  downloadingAll.value = true
+  if (!tracks.length) return
 
   const outputDir = getOutputDir()
   const fmt = settings.format
-  const total = tracks.length
 
-  downloadState.active = true
-  downloadState.cancelled = false
-  downloadState.totalTracks = total
-  downloadState.currentIndex = 0
-  downloadState.currentTrack = ''
+  const items = tracks.map((track, i) => ({
+    id: track.id,
+    title: track.title,
+    url: track.url,
+    format: fmt,
+    outputDir,
+    eventId: `yt-all-${Date.now()}-${i}`,
+  }))
 
-  for (let i = 0; i < total; i++) {
-    if (downloadState.cancelled) break
-
-    const track = tracks[i]
-    downloadState.currentIndex = i
-    downloadState.currentTrack = track.title
-
-    try {
-      const eventId = `yt-all-${Date.now()}-${i}`
-      downloadState.currentEventId = eventId
-      await invoke('download_audio', {
-        url: track.url,
-        format: fmt,
-        outputDir,
-        eventId,
-      })
-    } catch (e: any) {
-      if (downloadState.cancelled) break
-      console.error(`Download failed: ${track.title}`, e)
-    }
-  }
-
-  downloadState.currentIndex = total
-  downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : 'Fertig!'
-
-  setTimeout(() => {
-    downloadState.active = false
-    downloadState.cancelled = false
-  }, 3000)
-
-  downloadingAll.value = false
+  addToQueue(items)
 }
 
 async function loadUrl() {
@@ -463,128 +422,40 @@ function formatDuration(seconds: number) {
 }
 
 function isDownloading(id: string) {
-  return activeDownloads.value.some(d => d.id === id && !d.done && !d.error)
+  return downloadState.queue.some((q: any) => q.id === id) ||
+    (downloadState.active && downloadState.currentEventId.includes(id))
 }
 
-async function downloadTrack(track: Track) {
-  if (downloadState.active) return
+function downloadTrack(track: Track) {
+  const outputDir = getOutputDir()
+  const eventId = `yt-${track.id}-${Date.now()}`
 
-  downloadState.active = true
-  downloadState.cancelled = false
-  downloadState.totalTracks = 1
-  downloadState.currentIndex = 0
-  downloadState.trackPercent = 0
-  downloadState.speed = ''
-  downloadState.eta = ''
-  downloadState.currentTrack = track.title
-  downloadState.currentEventId = track.id
-
-  const dl: Download = {
+  addToQueue({
     id: track.id,
     title: track.title,
-    percent: 0,
-    speed: '',
-    eta: '',
-    done: false,
-    error: false,
-  }
-  activeDownloads.value.unshift(dl)
-
-  const unlisten1 = await listen<any>(`download-progress-${track.id}`, (event) => {
-    const d = activeDownloads.value.find(d => d.id === track.id)
-    if (d) {
-      d.percent = event.payload.percent
-      d.speed = event.payload.speed
-      d.eta = event.payload.eta
-    }
-    downloadState.trackPercent = event.payload.percent || 0
-    downloadState.speed = event.payload.speed || ''
-    downloadState.eta = event.payload.eta || ''
+    url: track.url,
+    format: settings.format,
+    outputDir,
+    eventId,
   })
-
-  const unlisten2 = await listen(`download-done-${track.id}`, () => {
-    const d = activeDownloads.value.find(d => d.id === track.id)
-    if (d) d.done = true
-    unlisten1()
-    unlisten2()
-  })
-
-  try {
-    const outputDir = getOutputDir()
-    await invoke('download_audio', {
-      url: track.url,
-      format: settings.format,
-      outputDir,
-      eventId: track.id,
-    })
-    downloadState.currentIndex = 1
-    downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : 'Fertig!'
-  } catch (e: any) {
-    if (!downloadState.cancelled) {
-      const d = activeDownloads.value.find(d => d.id === track.id)
-      if (d) {
-        d.error = true
-        d.eta = typeof e === 'string' ? e : JSON.stringify(e)
-      }
-      error.value = typeof e === 'string' ? e : JSON.stringify(e)
-    }
-    unlisten1()
-    unlisten2()
-  }
-
-  setTimeout(() => {
-    downloadState.active = false
-    downloadState.cancelled = false
-  }, 3000)
 }
 
-async function downloadAll() {
-  if (!playlistTracks.value.length || downloadState.active) return
-  downloadingAll.value = true
+function downloadAll() {
+  if (!playlistTracks.value.length) return
 
   const outputDir = getOutputDir()
   const fmt = settings.format
-  const total = playlistTracks.value.length
 
-  downloadState.active = true
-  downloadState.cancelled = false
-  downloadState.totalTracks = total
-  downloadState.currentIndex = 0
-  downloadState.currentTrack = ''
+  const items = playlistTracks.value.map((track, i) => ({
+    id: track.id,
+    title: track.title,
+    url: track.url,
+    format: fmt,
+    outputDir,
+    eventId: `yt-pl-${Date.now()}-${i}`,
+  }))
 
-  let skipped = 0
-
-  for (let i = 0; i < total; i++) {
-    if (downloadState.cancelled) break
-
-    const track = playlistTracks.value[i]
-    downloadState.currentIndex = i
-    downloadState.currentTrack = track.title
-
-    try {
-      const eventId = `yt-${Date.now()}-${i}`
-      downloadState.currentEventId = eventId
-      await invoke('download_audio', {
-        url: track.url,
-        format: fmt,
-        outputDir,
-        eventId,
-      })
-    } catch (e: any) {
-      if (downloadState.cancelled) break
-      console.error(`Download failed: ${track.title}`, e)
-    }
-  }
-
-  downloadState.currentIndex = total
-  downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : (skipped > 0 ? `Fertig! (${skipped} übersprungen)` : 'Fertig!')
-
-  setTimeout(() => {
-    downloadState.active = false
-    downloadState.cancelled = false
-  }, 3000)
-
-  downloadingAll.value = false
+  addToQueue(items)
 }
 
 </script>

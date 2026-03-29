@@ -92,7 +92,7 @@
             <button
               class="btn btn-primary"
               @click="downloadPlaylist"
-              :disabled="downloading || downloadState.active"
+              :disabled="downloading"
             >
               <span v-if="downloading" class="spinner" />
               <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -127,7 +127,6 @@
               <button
                 class="btn btn-primary track-dl-btn"
                 @click="downloadSingleTrack(track)"
-                :disabled="downloadState.active"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -152,10 +151,9 @@
 <script setup lang="ts">
 import { ref, inject, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
 
 const settings = inject('settings') as any
-const downloadState = inject('downloadState') as any
+const addToQueue = inject('addToQueue') as (items: any) => void
 const playTrack = inject('playTrack') as (title: string, artist: string, query: string) => void
 
 const isConnected = ref(false)
@@ -356,131 +354,39 @@ async function selectPlaylist(pl: any) {
   loadingTracks.value = false
 }
 
-async function downloadPlaylist() {
+function downloadPlaylist() {
   if (!selectedPlaylist.value || !tracks.value.length) return
-  if (downloadState.active) return
-
-  downloading.value = true
-  downloadLog.value = []
 
   const outputDir = settings.downloadDir || '~/Downloads/Hörbert'
   const fmt = settings.format || 'mp3'
   const playlistName = selectedPlaylist.value.name
-  const total = tracks.value.length
 
-  downloadState.active = true
-  downloadState.cancelled = false
-  downloadState.totalTracks = total
-  downloadState.currentIndex = 0
-  downloadState.trackPercent = 0
-  downloadState.speed = ''
-  downloadState.eta = ''
-  downloadState.currentTrack = ''
-  downloadState.log = []
+  const items = tracks.value.map((track, i) => ({
+    id: track.id,
+    title: `${track.artists} - ${track.name}`,
+    url: `ytsearch1:${track.artists} - ${track.name}`,
+    format: fmt,
+    outputDir: `${outputDir}/${playlistName}`,
+    eventId: `spotify-${Date.now()}-${i}`,
+  }))
 
-  for (let i = 0; i < total; i++) {
-    if (downloadState.cancelled) break
-
-    const track = tracks.value[i]
-    const query = `${track.artists} - ${track.name}`
-
-    downloadState.currentIndex = i
-    downloadState.trackPercent = 0
-    downloadState.currentTrack = query
-
-    try {
-      const eventId = `spotify-${Date.now()}-${i}`
-      downloadState.currentEventId = eventId
-
-      const unlisten1 = await listen<any>(`download-progress-${eventId}`, (event: any) => {
-        downloadState.trackPercent = event.payload.percent || 0
-        downloadState.speed = event.payload.speed || ''
-        downloadState.eta = event.payload.eta || ''
-      })
-      const unlisten2 = await listen(`download-done-${eventId}`, () => {
-        unlisten1()
-        unlisten2()
-      })
-
-      await invoke('download_audio', {
-        url: `ytsearch1:${query}`,
-        format: fmt,
-        outputDir: `${outputDir}/${playlistName}`,
-        eventId,
-      })
-      downloadLog.value.push(`✓ ${query}`)
-    } catch (e: any) {
-      if (downloadState.cancelled) break
-      downloadLog.value.push(`✗ ${query}: ${e}`)
-    }
-  }
-
-  downloadState.currentIndex = total
-  downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : 'Fertig!'
-  if (!downloadState.cancelled) {
-    downloadLog.value.push(`Fertig! ${total} Tracks verarbeitet.`)
-  } else {
-    downloadLog.value.push(`Abgebrochen nach ${downloadState.currentIndex} von ${total} Tracks.`)
-  }
-
-  setTimeout(() => {
-    downloadState.active = false
-    downloadState.cancelled = false
-  }, 3000)
-
-  downloading.value = false
+  addToQueue(items)
 }
 
-async function downloadSingleTrack(track: any) {
-  if (downloadState.active) return
-
+function downloadSingleTrack(track: any) {
   const outputDir = settings.downloadDir || '~/Downloads/Hörbert'
   const fmt = settings.format || 'mp3'
   const query = `${track.artists} - ${track.name}`
   const playlistName = selectedPlaylist.value?.name || 'Spotify'
 
-  downloadState.active = true
-  downloadState.cancelled = false
-  downloadState.totalTracks = 1
-  downloadState.currentIndex = 0
-  downloadState.trackPercent = 0
-  downloadState.speed = ''
-  downloadState.eta = ''
-  downloadState.currentTrack = query
-
-  try {
-    const eventId = `spotify-single-${Date.now()}`
-
-    downloadState.currentEventId = eventId
-
-    const unlisten1 = await listen<any>(`download-progress-${eventId}`, (event) => {
-      downloadState.trackPercent = event.payload.percent || 0
-      downloadState.speed = event.payload.speed || ''
-      downloadState.eta = event.payload.eta || ''
-    })
-    const unlisten2 = await listen(`download-done-${eventId}`, () => {
-      unlisten1()
-      unlisten2()
-    })
-
-    await invoke('download_audio', {
-      url: `ytsearch1:${query}`,
-      format: fmt,
-      outputDir: `${outputDir}/${playlistName}`,
-      eventId,
-    })
-    downloadState.currentIndex = 1
-    downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : 'Fertig!'
-  } catch (e: any) {
-    if (!downloadState.cancelled) {
-      console.error(`Download failed: ${query}`, e)
-    }
-  }
-
-  setTimeout(() => {
-    downloadState.active = false
-    downloadState.cancelled = false
-  }, 3000)
+  addToQueue({
+    id: track.id,
+    title: query,
+    url: `ytsearch1:${query}`,
+    format: fmt,
+    outputDir: `${outputDir}/${playlistName}`,
+    eventId: `spotify-single-${Date.now()}`,
+  })
 }
 
 function disconnect() {

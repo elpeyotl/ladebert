@@ -56,7 +56,7 @@
       <!-- Left: Available MP3s -->
       <div class="source-panel">
         <div class="panel-header">
-          <div class="section-title">Downloads</div>
+          <div class="section-title" :title="sourceDir">{{ sourceDirName }}</div>
           <div class="panel-actions">
             <button class="icon-btn" @click="refreshSourceFiles" title="Aktualisieren">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -294,6 +294,12 @@ function resolveSourceDir(): string {
 }
 
 const sourceDir = ref(resolveSourceDir())
+const sourceDirName = computed(() => {
+  const dir = sourceDir.value
+  if (!dir) return 'Downloads'
+  const parts = dir.replace(/\/+$/, '').split('/')
+  return parts[parts.length - 1] || 'Downloads'
+})
 const sourceFiles = ref<string[]>([])
 const fileSearch = ref('')
 const expandedFolders = ref(new Set<string>())
