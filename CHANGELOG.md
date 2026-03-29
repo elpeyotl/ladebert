@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.1 (2026-03-29)
+
+### Bugfix
+- Crash behoben: App stürzte ab wenn yt-dlp stdout/stderr Pipes nicht erstellt werden konnten
+
+### Neu
+- Download-Queue: Mehrere Downloads gleichzeitig in Warteschlange stellen (YouTube + Spotify)
+- Update-Check: Hinweis in der Sidebar wenn eine neue Version verfügbar ist
+- Download-/Player-Bar verdeckt keine Buttons mehr (dynamisches Padding)
+- Quellordner-Name wird im Hörbert-Panel angezeigt
+- Standard-Format auf "Original" geändert (schneller, keine Konvertierung)
+
 ## v1.0.0 (2026-03-29)
 
 Erster Release der Ladebert App.
