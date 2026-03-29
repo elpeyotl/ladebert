@@ -1,3 +1,0 @@
-[build]
-  publish = "landingpage"
-  command = "echo 'Static site, no build needed'"
