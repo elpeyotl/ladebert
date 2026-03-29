@@ -58,7 +58,7 @@
     </aside>
 
     <!-- Main content -->
-    <main class="main">
+    <main class="main" :style="{ paddingBottom: bottomPadding }">
       <YouTube v-if="activeTab === 'youtube'" />
       <Spotify v-else-if="activeTab === 'spotify'" />
       <Hoerbert v-else-if="activeTab === 'hoerbert'" />
@@ -499,6 +499,14 @@ function onAudioError() {
   playerState.playing = false
   playerState.loading = false
 }
+
+// Bottom padding to prevent fixed bars from covering content
+const bottomPadding = computed(() => {
+  let px = 0
+  if (playerState.active) px += 52
+  if (downloadState.active) px += 56
+  return px ? `${px}px` : '0'
+})
 
 // Update check
 const updateAvailable = ref(false)
