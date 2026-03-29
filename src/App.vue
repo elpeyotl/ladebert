@@ -48,6 +48,7 @@
           <span class="nav-label">Settings</span>
         </button>
       </nav>
+      <div class="sidebar-version">v{{ appVersion }}</div>
     </aside>
 
     <!-- Main content -->
@@ -196,6 +197,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import YouTube from './views/YouTube.vue'
 import Spotify from './views/Spotify.vue'
 import Hoerbert from './views/Hoerbert.vue'
+import { version as appVersion } from '../package.json'
 
 // Icons as render-function components (runtime-compatible)
 const IconYoutube = {
@@ -440,6 +442,14 @@ provide('playFile', playFile)
   flex-direction: column;
   gap: 4px;
   flex: 1;
+}
+
+.sidebar-version {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 8px 0;
+  font-family: 'DM Mono', monospace;
 }
 
 .settings-btn {

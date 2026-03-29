@@ -1,10 +1,10 @@
 [package]
 name = "hoerbert-downloader"
-version = "0.1.0"
+version = "1.0.0"
 description = "Hörbert Downloader - YouTube & Spotify to MP3"
 authors = []
 license = ""
-repository = ""
+repository = "https://github.com/elpeyotl/ladebert"
 edition = "2021"
 
 [lib]
