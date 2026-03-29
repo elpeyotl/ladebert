@@ -706,6 +706,37 @@
       opacity: 0.5;
     }
 
+    /* ── Install hint ── */
+    .install-hint {
+      margin-top: 8px;
+    }
+
+    .install-cmd {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin-top: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--mint);
+    }
+
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+      transition: color 0.2s;
+      display: flex;
+    }
+    .copy-btn:hover { color: var(--text); }
+
     /* ── Scroll animations ── */
     .reveal {
       opacity: 0;
@@ -801,10 +832,18 @@
       </a>
     </div>
     <p class="hero-note">macOS · Gratis · Open Source</p>
-    <p class="hero-note" style="margin-top: 8px;">
+    <p class="hero-note install-hint">
       <strong style="color: var(--amber);">Wichtig beim ersten Start:</strong>
-      Nicht doppelklicken – stattdessen <strong style="color: var(--text);">Rechtsklick</strong> auf die App → <strong style="color: var(--text);">«Öffnen»</strong> wählen → nochmals <strong style="color: var(--text);">«Öffnen»</strong> bestätigen. Danach startet die App immer normal.
+      macOS meldet «App ist beschädigt» weil sie nicht signiert ist. Das ist normal bei Open-Source-Apps.
+      <br>Öffne <strong style="color: var(--text);">Terminal</strong> (Spotlight → «Terminal» eintippen) und führe aus:
     </p>
+    <div class="install-cmd">
+      <code>xattr -cr /Applications/Ladebert.app</code>
+      <button onclick="navigator.clipboard.writeText('xattr -cr /Applications/Ladebert.app')" class="copy-btn" title="Kopieren">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+    <p class="hero-note">Danach startet die App immer normal per Doppelklick.</p>
   </div>
 
   <div class="hero-visual">
