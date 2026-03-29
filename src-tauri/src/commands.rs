@@ -1153,9 +1153,9 @@ pub async fn format_sd_card(path: String) -> Result<String, String> {
         device_id.clone()
     };
 
-    // Format as FAT32 with name "HOERBERT"
+    // Format as FAT32 with MBR partition scheme (required for hörbert)
     let output = Command::new("diskutil")
-        .args(["eraseDisk", "FAT32", "HOERBERT", &format!("/dev/{}", whole_disk)])
+        .args(["eraseDisk", "FAT32", "HOERBERT", "MBRFormat", &format!("/dev/{}", whole_disk)])
         .output()
         .await
         .map_err(|e| format!("Formatierung fehlgeschlagen: {}", e))?;
@@ -1166,15 +1166,37 @@ pub async fn format_sd_card(path: String) -> Result<String, String> {
     }
 
     // Wait for the new volume to be mounted (up to 10 seconds)
-    let new_mount = format!("/Volumes/HOERBERT");
+    let new_mount = "/Volumes/HOERBERT".to_string();
     for _ in 0..20 {
         if std::path::Path::new(&new_mount).exists() {
-            return Ok(new_mount);
+            break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     }
 
-    // Fallback: return expected path even if not yet mounted
+    // Create hörbert folder structure
+    if std::path::Path::new(&new_mount).exists() {
+        // Create folders 0-8
+        for i in 0..=8u8 {
+            let _ = std::fs::create_dir_all(format!("{}/{}", new_mount, i));
+        }
+
+        // Create hoerbert.xml
+        let xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<hoerbert>\n\t<hoerbert_playlists>\n\t\t<version>1.0</version>\n\t\t<generator>ladebert</generator>\n\t\t<folders>\n\t\t</folders>\n\t</hoerbert_playlists>\n</hoerbert>";
+        let _ = std::fs::write(format!("{}/hoerbert.xml", new_mount), xml);
+
+        // Create info.xml
+        let now = chrono::Local::now().format("%Y%m%d%H%M%S");
+        let info = format!(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<hoerbert>\n<app_version>ladebert</app_version>\n<last_write_date>{}</last_write_date>\n<drive_name>HOERBERT</drive_name>\n<by_whom>Ladebert</by_whom>\n</hoerbert>",
+            now
+        );
+        let _ = std::fs::write(format!("{}/info.xml", new_mount), info);
+
+        // Create index.m3u
+        let _ = std::fs::write(format!("{}/index.m3u", new_mount), "#EXTM3U");
+    }
+
     Ok(new_mount)
 }
 

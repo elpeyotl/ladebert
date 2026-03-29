@@ -1,6 +1,6 @@
 [package]
 name = "ladebert"
-version = "1.3.0"
+version = "1.4.0"
 description = "Ladebert - YouTube & Spotify to MP3 für Hörbert"
 authors = []
 license = ""
@@ -26,6 +26,7 @@ reqwest = { version = "0.12", features = ["json"] }
 libc = "0.2"
 quick-xml = "0.37"
 urlencoding = "2.1.3"
+chrono = "0.4.44"
 
 [profile.release]
 panic = "abort"

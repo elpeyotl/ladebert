@@ -3,14 +3,15 @@
     <div class="header">
       <div class="header-left">
         <h1>Hörbert Manager</h1>
-        <span class="badge badge-green" v-if="hoerbertDir">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+        <span class="badge badge-green" v-if="hoerbertDir && !ejected">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 2v6h3V2M15 2v6"/><circle cx="12" cy="16" r="1.5"/>
+          </svg>
           {{ sdCardName }}
-          <button class="eject-btn" @click.stop="ejectSdCard" title="SD-Karte auswerfen">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M12 5l-8 10h16L12 5z"/><rect x="4" y="18" width="16" height="2" rx="1"/>
-            </svg>
-          </button>
+        </span>
+        <span class="badge badge-eject" v-if="ejected">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          SD-Karte kann entfernt werden
         </span>
         <span class="disk-space" v-if="diskSpace">
           {{ formatBytes(diskSpace.free) }} frei von {{ formatBytes(diskSpace.total) }}
@@ -29,6 +30,12 @@
             <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           {{ formatting ? 'Formatiere...' : 'Formatieren' }}
+        </button>
+        <button v-if="hoerbertDir && !ejected" class="btn btn-eject" @click="ejectSdCard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5l-8 10h16L12 5z"/><rect x="4" y="18" width="16" height="2" rx="1"/>
+          </svg>
+          Auswerfen
         </button>
         <button class="btn btn-ghost" @click="pickHoerbertDir">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -448,14 +455,21 @@ async function formatSdCard() {
   }
 }
 
+const ejected = ref(false)
+
 async function ejectSdCard() {
   if (!hoerbertDir.value) return
   try {
     await invoke('eject_disk', { path: hoerbertDir.value })
-    hoerbertDir.value = ''
-    localStorage.removeItem('hoerbertDir')
+    ejected.value = true
     diskSpace.value = null
     for (let i = 1; i <= 9; i++) slotFiles.value[i] = []
+    // Clear stored path after a delay so user sees the message
+    setTimeout(() => {
+      hoerbertDir.value = ''
+      localStorage.removeItem('hoerbertDir')
+      ejected.value = false
+    }, 5000)
   } catch (e) {
     alert('Auswerfen fehlgeschlagen: ' + e)
   }
@@ -701,8 +715,18 @@ async function writeToCard() {
 onMounted(async () => {
   if (sourceDir.value) loadSourceFiles()
   if (hoerbertDir.value) {
-    await loadSlotsFromCard()
-    await loadDiskSpace()
+    // Check if the saved SD card path still exists
+    try {
+      await invoke('get_disk_space', { path: hoerbertDir.value })
+      await loadSlotsFromCard()
+      await loadDiskSpace()
+    } catch {
+      // SD card not mounted – clear stale state
+      hoerbertDir.value = ''
+      localStorage.removeItem('hoerbertDir')
+      diskSpace.value = null
+      for (let i = 1; i <= 9; i++) slotFiles.value[i] = []
+    }
   }
 })
 </script>

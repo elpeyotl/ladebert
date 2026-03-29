@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.4.0 (2026-03-29)
+
+### Neu
+- SD-Karte formatieren (FAT32/MBR) direkt in der App – kompatibel mit Hörbert
+- Ordnerstruktur (0-8), hoerbert.xml, info.xml und index.m3u werden automatisch erstellt
+- Prominenter grüner Auswerfen-Button
+- "SD-Karte kann entfernt werden" Meldung nach dem Auswerfen
+- SD-Karten-Name wird im Badge mit SD-Icon angezeigt
+- YouTube Playlist-Suche: Suche nach Alben und Playlisten
+- Verständliche Fehlermeldung wenn SD-Karte voll ist
+- Unvollständige WAV-Dateien werden bei Fehler aufgeräumt
+- SD-Karten-State wird beim Start geprüft (kein Geister-Hörbert)
+
+### Bugfixes
+- SD-Karte wird jetzt als MBR formatiert (GPT funktionierte nicht mit Hörbert)
+- Crash beim Schreiben auf SD-Karte behoben (UTF-8 Umlaute in Dateinamen)
+- XML-Sonderzeichen (& < >) werden jetzt korrekt escaped
+- Lösch-Dialoge blockieren jetzt zuverlässig (native Tauri-Dialoge)
+- Update-Check zeigt nur noch neuere Versionen an
+
 ## v1.3.0 (2026-03-29)
 
 ### Neu
