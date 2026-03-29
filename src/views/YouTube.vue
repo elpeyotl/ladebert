@@ -490,7 +490,11 @@ function isDownloading(id: string) {
 }
 
 function downloadTrack(track: Track) {
-  const outputDir = getOutputDir()
+  let outputDir = getOutputDir()
+  if (mode.value === 'url' && playlistTitle.value) {
+    const base = settings.downloadDir || '~/Downloads/Hörbert'
+    outputDir = `${base}/Playlists/${playlistTitle.value}`
+  }
   const eventId = `yt-${track.id}-${Date.now()}`
 
   addToQueue({
@@ -506,7 +510,9 @@ function downloadTrack(track: Track) {
 function downloadAll() {
   if (!playlistTracks.value.length) return
 
-  const outputDir = getOutputDir()
+  const base = settings.downloadDir || '~/Downloads/Hörbert'
+  const folderName = playlistTitle.value || 'Playlist'
+  const outputDir = `${base}/Playlists/${folderName}`
   const fmt = settings.format
 
   const items = playlistTracks.value.map((track, i) => ({

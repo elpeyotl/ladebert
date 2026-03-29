@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.5.1 (2026-03-29)
+
+### Verbesserungen
+- Playlist-Downloads werden in Playlists/{Name}/ organisiert
+
 ## v1.5.0 (2026-03-29)
 
 ### Verbesserungen
