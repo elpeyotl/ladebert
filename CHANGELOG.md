@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0 (2026-03-29)
+
+### Verbesserungen
+- Sprachfilter nur noch bei Kategorie-Suchen (Hörspiel, Kinderlieder etc.), nicht bei freier Suche
+- Landingpage-Text aktualisiert
+
 ## v1.4.0 (2026-03-29)
 
 ### Neu

@@ -359,8 +359,11 @@ function buildSearchQuery(): string {
   const parts: string[] = []
   if (query.value.trim()) parts.push(query.value.trim())
   const cat = categories.find(c => c.id === activeCategory.value)
-  if (cat) parts.push(cat.suffix)
-  if (settings.language) parts.push(settings.language)
+  if (cat) {
+    parts.push(cat.suffix)
+    // Only add language for category searches (not for free text / playlist searches)
+    if (settings.language) parts.push(settings.language)
+  }
   return parts.join(' ')
 }
 
