@@ -83,6 +83,18 @@ fn parse_progress_line(line: &str) -> DownloadProgress {
     DownloadProgress { percent, speed, eta, filename }
 }
 
+/// Create a Command that hides the console window on Windows
+fn cmd(program: &str) -> Command {
+    #[allow(unused_mut)]
+    let mut c = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    c
+}
+
 fn sidecar_dir() -> std::path::PathBuf {
     // In production: binaries are next to the app executable
     // In dev: they're in src-tauri/binaries/
@@ -136,7 +148,7 @@ fn expand_tilde(path: &str) -> String {
 #[tauri::command]
 pub async fn search_youtube(query: String, limit: Option<u32>) -> Result<Vec<SearchResult>, String> {
     let count = limit.unwrap_or(10);
-    let output = Command::new("yt-dlp")
+    let output = cmd("yt-dlp")
         .env("PATH", extended_path())
         .args([
             &format!("ytsearch{}:{}", count, query),
@@ -200,7 +212,7 @@ pub async fn search_youtube_playlists(query: String, limit: Option<u32>) -> Resu
         "https://www.youtube.com/results?search_query={}&sp=EgIQAw%253D%253D",
         urlencoding::encode(&query)
     );
-    let output = Command::new("yt-dlp")
+    let output = cmd("yt-dlp")
         .env("PATH", extended_path())
         .args([
             &search_url,
@@ -247,7 +259,7 @@ pub async fn search_youtube_playlists(query: String, limit: Option<u32>) -> Resu
 /// Get playlist or single video info
 #[tauri::command]
 pub async fn get_playlist_info(url: String) -> Result<serde_json::Value, String> {
-    let output = Command::new("yt-dlp")
+    let output = cmd("yt-dlp")
         .env("PATH", extended_path())
         .args([
             "--dump-json",
@@ -325,7 +337,7 @@ pub async fn download_audio(
 
     args.push(url.clone());
 
-    let mut child = Command::new("yt-dlp")
+    let mut child = cmd("yt-dlp")
         .env("PATH", extended_path())
         .args(&args)
         .stdout(Stdio::piped())
@@ -590,7 +602,7 @@ pub async fn wait_for_oauth_callback(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 pub async fn get_stream_url(query: String) -> Result<String, String> {
     // Step 1: Get direct stream URL from yt-dlp (fast, no download)
-    let output = Command::new("yt-dlp")
+    let output = cmd("yt-dlp")
         .env("PATH", extended_path())
         .args([
             "-f", "worstaudio[ext=m4a]/worstaudio",
@@ -891,7 +903,7 @@ pub async fn write_to_hoerbert(
         let dest_path = format!("{}/{}.WAV", slot_dir, next_seq);
 
         // Convert to WAV (16-bit, 32kHz, mono) for hörbert
-        let child = Command::new("ffmpeg")
+        let child = cmd("ffmpeg")
             .env("PATH", extended_path())
             .args([
                 "-i", &src_path,

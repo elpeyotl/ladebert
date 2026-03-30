@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.6.1 (2026-03-30)
+
+### Bugfixes
+- Windows: Kein CMD-Fenster mehr beim Downloaden/Konvertieren
+- Landingpage: Windows-Download-Link wird automatisch aktualisiert
+
 ## v1.6.0 (2026-03-29)
 
 ### Neu
