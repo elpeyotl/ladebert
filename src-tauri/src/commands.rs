@@ -662,10 +662,16 @@ pub async fn get_stream_url(query: String) -> Result<String, String> {
 /// Open URL in default browser
 #[tauri::command]
 pub async fn open_url(url: String) -> Result<(), String> {
-    Command::new("open")
-        .arg(&url)
-        .spawn()
-        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "macos")]
+    let result = Command::new("open").arg(&url).spawn();
+
+    #[cfg(target_os = "windows")]
+    let result = cmd("cmd").args(["/C", "start", "", &url]).spawn();
+
+    #[cfg(target_os = "linux")]
+    let result = Command::new("xdg-open").arg(&url).spawn();
+
+    result.map_err(|e| e.to_string())?;
     Ok(())
 }
 

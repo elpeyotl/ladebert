@@ -1,6 +1,6 @@
 [package]
 name = "ladebert"
-version = "1.6.1"
+version = "1.7.0"
 description = "Ladebert - YouTube & Spotify to MP3 für Hörbert"
 authors = []
 license = ""
@@ -18,6 +18,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }

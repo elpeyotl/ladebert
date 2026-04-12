@@ -49,9 +49,7 @@
       </nav>
       <div class="sidebar-version">
         <template v-if="updateAvailable">
-          <a class="update-link" href="#" @click.prevent="openUpdateUrl" title="Update herunterladen">
-            v{{ appVersion }} → v{{ updateVersion }}
-          </a>
+          <span class="update-link" title="Update wird installiert…">Aktualisiere…</span>
         </template>
         <template v-else>v{{ appVersion }}</template>
       </div>
@@ -201,6 +199,8 @@
 import { ref, provide, reactive, h, computed, nextTick, onMounted } from 'vue'
 import { invoke, convertFileSrc } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { check } from '@tauri-apps/plugin-updater'
+import { relaunch } from '@tauri-apps/plugin-process'
 import YouTube from './views/YouTube.vue'
 import Spotify from './views/Spotify.vue'
 import Hoerbert from './views/Hoerbert.vue'
@@ -508,39 +508,22 @@ const bottomPadding = computed(() => {
   return px ? `${px}px` : '0'
 })
 
-// Update check
+// Auto-update: silent download + install, relaunch when ready
 const updateAvailable = ref(false)
 const updateVersion = ref('')
-const updateUrl = ref('')
-
-function isNewerVersion(latest: string, current: string): boolean {
-  const l = latest.split('.').map(Number)
-  const c = current.split('.').map(Number)
-  for (let i = 0; i < 3; i++) {
-    if ((l[i] || 0) > (c[i] || 0)) return true
-    if ((l[i] || 0) < (c[i] || 0)) return false
-  }
-  return false
-}
 
 async function checkForUpdate() {
   try {
-    const res = await fetch('https://api.github.com/repos/elpeyotl/ladebert/releases/latest')
-    if (!res.ok) return
-    const data = await res.json()
-    const latest = (data.tag_name || '').replace(/^v/, '')
-    if (latest && isNewerVersion(latest, appVersion)) {
+    const update = await check()
+    if (update) {
       updateAvailable.value = true
-      updateVersion.value = latest
-      updateUrl.value = data.html_url
+      updateVersion.value = update.version
+      await update.downloadAndInstall()
+      await relaunch()
     }
   } catch {
     // Silently ignore – no network, no problem
   }
-}
-
-function openUpdateUrl() {
-  invoke('plugin:shell|open', { path: updateUrl.value })
 }
 
 onMounted(() => {
