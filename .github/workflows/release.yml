@@ -59,15 +59,38 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
           rm certificate.p12
 
-      - name: Build Tauri (aarch64, signed)
+      - name: Build Tauri (aarch64, signed, no notarization)
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build -- --target aarch64-apple-darwin
+
+      - name: Notarize app (with retries)
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Ladebert.app"
+          ZIP=$(mktemp /tmp/ladebert-notarize.XXXXXX.zip)
+          ditto -c -k --keepParent "$APP" "$ZIP"
+          for i in 1 2 3 4 5; do
+            echo "Notarization attempt $i..."
+            if xcrun notarytool submit "$ZIP" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              --wait --timeout 30m; then
+              echo "Notarization successful!"
+              xcrun stapler staple "$APP"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 30s..."
+            sleep 30
+          done
+          echo "Notarization failed after 5 attempts"
+          exit 1
 
       - name: Create DMG
         run: |
