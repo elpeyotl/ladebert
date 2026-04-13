@@ -172,7 +172,7 @@ const downloading = ref(false)
 const downloadLog = ref<string[]>([])
 const playlistSearch = ref('')
 
-const clientId = ref(import.meta.env.VITE_SPOTIFY_CLIENT_ID || '')
+const clientId = ref(import.meta.env.VITE_SPOTIFY_CLIENT_ID || 'd15bf3b0963546a1bf129f2704a204f9')
 
 const filteredPlaylists = computed(() => {
   const q = playlistSearch.value.toLowerCase().trim()
