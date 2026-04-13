@@ -66,47 +66,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build -- --target aarch64-apple-darwin
 
-      - name: Notarize app
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          APP="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Ladebert.app"
-          ZIP=$(mktemp /tmp/ladebert-notarize.XXXXXX.zip)
-          ditto -c -k --keepParent "$APP" "$ZIP"
-
-          # Submit (retry upload up to 5 times)
-          for i in 1 2 3 4 5; do
-            echo "Upload attempt $i..."
-            OUTPUT=$(xcrun notarytool submit "$ZIP" \
-              --apple-id "$APPLE_ID" \
-              --password "$APPLE_PASSWORD" \
-              --team-id "$APPLE_TEAM_ID" \
-              --output-format json 2>&1) && break
-            echo "Upload failed, retrying in $((i * 30))s..."
-            sleep $((i * 30))
-          done
-
-          SUBMISSION_ID=$(echo "$OUTPUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-          echo "Submission ID: $SUBMISSION_ID"
-
-          # Wait for result separately (more resilient)
-          xcrun notarytool wait "$SUBMISSION_ID" \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --timeout 30m
-
-          # Check result
-          xcrun notarytool info "$SUBMISSION_ID" \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID"
-
-          # Staple the notarization ticket
-          xcrun stapler staple "$APP"
-          echo "Notarization complete!"
+      # Notarization skipped — Apple's notary service is unreliable in CI.
+      # App is still signed with Developer ID. Users may need to right-click → Open on first launch.
 
       - name: Create DMG
         run: |
