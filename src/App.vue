@@ -546,7 +546,7 @@ async function checkForUpdate() {
 
 // Donation nudge
 const DONATION_THRESHOLD = 30
-const DONATION_DISMISS_DAYS = 180
+const DONATION_DISMISS_DAYS = 60
 const downloadCount = ref(parseInt(localStorage.getItem('ladebert:download_count') || '0', 10))
 const showDonationToast = ref(false)
 
