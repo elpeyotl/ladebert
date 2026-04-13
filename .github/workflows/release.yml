@@ -122,7 +122,20 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build -- --bundles nsis,updater
+        run: |
+          if ([string]::IsNullOrEmpty($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            Write-Error "TAURI_SIGNING_PRIVATE_KEY is empty"
+            exit 1
+          }
+          Write-Host "Signing key length: $($env:TAURI_SIGNING_PRIVATE_KEY.Length)"
+          npm run tauri build -- --bundles nsis updater
+        shell: pwsh
+
+      - name: List Windows bundle output
+        if: always()
+        run: |
+          Get-ChildItem -Recurse src-tauri/target/release/bundle | Select-Object FullName, Length
+        shell: pwsh
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
