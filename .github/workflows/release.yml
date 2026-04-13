@@ -137,37 +137,13 @@ jobs:
           Get-ChildItem -Recurse src-tauri/target/release/bundle | Select-Object FullName, Length
         shell: pwsh
 
-      - name: Ensure Windows updater artifacts (fallback)
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: |
-          $nsisDir = "src-tauri/target/release/bundle/nsis"
-          $exe = Get-ChildItem -Path $nsisDir -Filter "*-setup.exe" | Select-Object -First 1
-          if (-not $exe) { Write-Error "No NSIS installer found"; exit 1 }
-          $zipPath = "$nsisDir/$($exe.BaseName).nsis.zip"
-          if (-not (Test-Path $zipPath)) {
-            Write-Host "Tauri did not produce $zipPath — creating it manually"
-            Compress-Archive -Path $exe.FullName -DestinationPath $zipPath -Force
-          }
-          if (-not (Test-Path "$zipPath.sig")) {
-            Write-Host "Signing $zipPath with tauri signer"
-            $keyFile = Join-Path $env:RUNNER_TEMP "tauri.key"
-            Set-Content -Path $keyFile -Value $env:TAURI_SIGNING_PRIVATE_KEY -NoNewline
-            npm run tauri -- signer sign --private-key $keyFile --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" $zipPath
-            Remove-Item $keyFile
-          }
-          Get-ChildItem $nsisDir | Select-Object Name, Length
-        shell: pwsh
-
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
           path: |
             src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/nsis/*.nsis.zip
-            src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
+            src-tauri/target/release/bundle/nsis/*.exe.sig
 
   release:
     needs: [build-macos, build-windows]
@@ -187,8 +163,7 @@ jobs:
       - name: Generate latest.json
         run: |
           MAC_SIG=$(cat artifacts/macos-artifacts/macos/Ladebert.app.tar.gz.sig)
-          # Find the NSIS .sig file
-          WIN_SIG_FILE=$(find artifacts/windows-artifacts -name "*.nsis.zip.sig" | head -1)
+          WIN_SIG_FILE=$(find artifacts/windows-artifacts -name "*-setup.exe.sig" | head -1)
           WIN_SIG=$(cat "$WIN_SIG_FILE")
 
           cat > latest.json << EOF
@@ -206,7 +181,7 @@ jobs:
               },
               "windows-x86_64": {
                 "signature": "$WIN_SIG",
-                "url": "https://github.com/elpeyotl/ladebert/releases/download/${GITHUB_REF_NAME}/Ladebert_${{ steps.version.outputs.version }}_x64-setup.nsis.zip"
+                "url": "https://github.com/elpeyotl/ladebert/releases/download/${GITHUB_REF_NAME}/Ladebert_${{ steps.version.outputs.version }}_x64-setup.exe"
               }
             }
           }
@@ -215,8 +190,7 @@ jobs:
       - name: Find release files
         id: files
         run: |
-          echo "nsis_zip=$(find artifacts/windows-artifacts -name '*.nsis.zip' ! -name '*.sig' | head -1)" >> "$GITHUB_OUTPUT"
-          echo "nsis_exe=$(find artifacts/windows-artifacts -name '*.exe' | head -1)" >> "$GITHUB_OUTPUT"
+          echo "nsis_exe=$(find artifacts/windows-artifacts -name '*-setup.exe' | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -226,5 +200,4 @@ jobs:
             artifacts/macos-artifacts/macos/Ladebert.app.tar.gz
             artifacts/macos-artifacts/macos/Ladebert.app.tar.gz.sig
             ${{ steps.files.outputs.nsis_exe }}
-            ${{ steps.files.outputs.nsis_zip }}
             latest.json
