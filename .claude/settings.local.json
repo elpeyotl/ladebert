@@ -30,7 +30,11 @@
       "Bash(git add:*)",
       "Bash(git commit -m ':*)",
       "Bash(git tag:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); r=d['workflow_runs'][0]; print\\(r['id']\\)\")",
+      "Bash(curl -s \"https://api.github.com/repos/elpeyotl/ladebert/actions/runs/24331866624/artifacts\")",
+      "Bash(curl -sL -o /tmp/win3.zip \"https://nightly.link/elpeyotl/ladebert/actions/artifacts/6400812449.zip\")",
+      "Bash(unzip -l /tmp/win3.zip)"
     ]
   }
 }
