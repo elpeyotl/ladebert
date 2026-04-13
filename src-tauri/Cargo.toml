@@ -1,6 +1,6 @@
 [package]
 name = "ladebert"
-version = "1.7.1"
+version = "1.7.2"
 description = "Ladebert - YouTube & Spotify to MP3 für Hörbert"
 authors = []
 license = ""

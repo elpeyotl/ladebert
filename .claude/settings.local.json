@@ -16,7 +16,10 @@
       "Bash(/usr/local/bin/pipx uninstall:*)",
       "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
       "Bash(cargo check:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(gh run:*)",
+      "Bash(curl -s \"https://api.github.com/repos/elpeyotl/ladebert/actions/runs/24329943453/jobs\")",
+      "Bash(curl -sI \"https://github.com/elpeyotl/ladebert/actions/runs/24329943453\")"
     ]
   }
 }

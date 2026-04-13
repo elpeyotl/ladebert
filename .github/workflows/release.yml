@@ -122,16 +122,13 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build
+        run: npm run tauri build -- --bundles nsis,updater
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
           path: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/msi/*.msi.zip
-            src-tauri/target/release/bundle/msi/*.msi.zip.sig
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/nsis/*.nsis.zip
             src-tauri/target/release/bundle/nsis/*.nsis.zip.sig
@@ -153,7 +150,7 @@ jobs:
 
       - name: Generate latest.json
         run: |
-          MAC_SIG=$(cat artifacts/macos-artifacts/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Ladebert.app.tar.gz.sig)
+          MAC_SIG=$(cat artifacts/macos-artifacts/macos/Ladebert.app.tar.gz.sig)
           # Find the NSIS .sig file
           WIN_SIG_FILE=$(find artifacts/windows-artifacts -name "*.nsis.zip.sig" | head -1)
           WIN_SIG=$(cat "$WIN_SIG_FILE")
@@ -184,15 +181,14 @@ jobs:
         run: |
           echo "nsis_zip=$(find artifacts/windows-artifacts -name '*.nsis.zip' ! -name '*.sig' | head -1)" >> "$GITHUB_OUTPUT"
           echo "nsis_exe=$(find artifacts/windows-artifacts -name '*.exe' | head -1)" >> "$GITHUB_OUTPUT"
-          echo "msi=$(find artifacts/windows-artifacts -name '*.msi' ! -name '*.zip*' | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/macos-artifacts/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/Ladebert-macOS.dmg
-            artifacts/macos-artifacts/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Ladebert.app.tar.gz
+            artifacts/macos-artifacts/dmg/Ladebert-macOS.dmg
+            artifacts/macos-artifacts/macos/Ladebert.app.tar.gz
+            artifacts/macos-artifacts/macos/Ladebert.app.tar.gz.sig
             ${{ steps.files.outputs.nsis_exe }}
             ${{ steps.files.outputs.nsis_zip }}
-            ${{ steps.files.outputs.msi }}
             latest.json
