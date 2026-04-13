@@ -101,6 +101,21 @@
       </div>
     </Transition>
 
+    <!-- Donation toast -->
+    <Transition name="slide-up">
+      <div v-if="showDonationToast" class="donation-toast">
+        <div class="donation-toast-icon">☕</div>
+        <div class="donation-toast-body">
+          <div class="donation-toast-title">Schon {{ downloadCount }} Tracks mit Ladebert geladen!</div>
+          <div class="donation-toast-text">Wenn dir die App hilft, freu ich mich über einen Kaffee.</div>
+        </div>
+        <div class="donation-toast-actions">
+          <a href="https://buymeacoffee.com/elpeyotl" target="_blank" class="donation-toast-btn primary" @click="onDonationClicked">Kaffee spendieren</a>
+          <button class="donation-toast-btn" @click="dismissDonationToast">Später</button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Download bar -->
     <Transition name="slide-up">
       <div v-if="downloadState.active" class="download-bar">
@@ -325,6 +340,7 @@ async function processQueue() {
       unlisten2()
     })
 
+    let succeeded = false
     try {
       await invoke('download_audio', {
         url: item.url,
@@ -332,6 +348,7 @@ async function processQueue() {
         outputDir: item.outputDir,
         eventId: item.eventId,
       })
+      succeeded = true
     } catch (e: any) {
       if (downloadState.cancelled) break
       console.error(`Download failed: ${item.title}`, e)
@@ -341,6 +358,7 @@ async function processQueue() {
     unlisten1()
     unlisten2()
     downloadState.currentIndex++
+    if (succeeded) recordSuccessfulDownload()
   }
 
   downloadState.currentTrack = downloadState.cancelled ? 'Abgebrochen' : 'Fertig!'
@@ -524,6 +542,41 @@ async function checkForUpdate() {
   } catch {
     // Silently ignore – no network, no problem
   }
+}
+
+// Donation nudge
+const DONATION_THRESHOLD = 30
+const DONATION_DISMISS_DAYS = 180
+const downloadCount = ref(parseInt(localStorage.getItem('ladebert:download_count') || '0', 10))
+const showDonationToast = ref(false)
+
+function shouldShowDonationToast(): boolean {
+  if (localStorage.getItem('ladebert:donation_supported') === '1') return false
+  if (downloadCount.value < DONATION_THRESHOLD) return false
+  const dismissedAt = localStorage.getItem('ladebert:donation_dismissed_at')
+  if (dismissedAt) {
+    const daysSince = (Date.now() - new Date(dismissedAt).getTime()) / (1000 * 60 * 60 * 24)
+    if (daysSince < DONATION_DISMISS_DAYS) return false
+  }
+  return true
+}
+
+function recordSuccessfulDownload() {
+  downloadCount.value++
+  localStorage.setItem('ladebert:download_count', String(downloadCount.value))
+  if (!showDonationToast.value && shouldShowDonationToast()) {
+    showDonationToast.value = true
+  }
+}
+
+function dismissDonationToast() {
+  localStorage.setItem('ladebert:donation_dismissed_at', new Date().toISOString())
+  showDonationToast.value = false
+}
+
+function onDonationClicked() {
+  localStorage.setItem('ladebert:donation_supported', '1')
+  showDonationToast.value = false
 }
 
 onMounted(() => {
@@ -871,6 +924,82 @@ provide('playFile', playFile)
 .player-close-btn:hover {
   color: var(--text);
   background: var(--bg-hover);
+}
+
+/* Donation toast */
+.donation-toast {
+  position: fixed;
+  bottom: 72px;
+  right: 20px;
+  max-width: 360px;
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  z-index: 60;
+  align-items: flex-start;
+}
+
+.donation-toast-icon {
+  font-size: 24px;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.donation-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.donation-toast-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.donation-toast-text {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.donation-toast-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.donation-toast-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.donation-toast-btn:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.donation-toast-btn.primary {
+  background: var(--accent, #c4935a);
+  border-color: var(--accent, #c4935a);
+  color: #1a1410;
+  font-weight: 600;
+}
+
+.donation-toast-btn.primary:hover {
+  filter: brightness(1.1);
 }
 
 /* Download bar */
